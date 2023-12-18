@@ -1,2 +1,4 @@
 # gpu-pirates
-yarrrr
+![Sick Logo](logo.png)
+
+### yarrrr

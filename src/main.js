@@ -6,7 +6,7 @@ import Ship from "./ship.js"
 const k = kaboom()
 k.setBackground(k.BLACK)
 export default k
-	
+
 
 // fixed text bottom right
 const debug = k.add([
@@ -17,7 +17,6 @@ const debug = k.add([
 ])
 
 const map = new Map()
-
 const ship = new Ship()
 const myPlayer = new Player()
 
@@ -26,10 +25,10 @@ k.onUpdate(() => {
 	myPlayer.update()
 	ship.update()
 
+
 	// debug player position angle and velocity
 	debug.text = `mode: ${myPlayer.mode}`
 })
 
-k.onCollide("player", "ship", (p, s) => {
-	console.log("player collided with ship")
-})
+k.debug.inspect = true
+k.debug.showLog = true

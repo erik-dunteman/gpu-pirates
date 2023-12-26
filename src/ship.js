@@ -2,7 +2,7 @@ import k from './main.js'
 // units are centimeters / second
 
 const shipWidth = 200
-const shipLength = 300
+const shipLength = 500
 const velocityDecay = 0.98
 
 export default class Ship {
@@ -10,15 +10,19 @@ export default class Ship {
         this.ship = k.add([
             k.pos(200, 200),
             k.polygon([
-                k.vec2(0, shipLength * .3),
+                k.vec2(0, shipLength * .2),
                 k.vec2(shipWidth / 2, 0),
-                k.vec2(shipWidth, shipLength * .3), 
+                k.vec2(shipWidth, shipLength * .2), 
                 k.vec2(shipWidth, shipLength), 
                 k.vec2(0,shipLength)
             ]),
+            // k.body({mass: 10000}),
             k.area(),
             "ship"
         ])
+
+        // register parent
+        this.ship.parentObj = this
 
         this.ship.add([
             k.pos(shipWidth / 2, shipLength - 50),
@@ -28,9 +32,6 @@ export default class Ship {
 			k.anchor("center"),
             "captainSeat"
         ])
-
-        // add parent to custom object so we can access it from other objects
-        this.ship.parent = this
 
         this.velocity = 0
         this.angle = 0

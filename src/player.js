@@ -9,7 +9,7 @@ const velocityDecay = 0.93
 
 export default class Player {
     constructor() {
-		this.player = k.add([
+		this.player = add([
             k.pos(k.width()/2, k.height()/2),
 			k.anchor("center"),
             k.circle(width/2),
@@ -75,14 +75,12 @@ export default class Player {
 
     setupPilotControls() {
         this.player.onCollide("ship", (v) => {
-            console.log("touching ship")
+            if (this.mode == "walk") {
+                console.log(v)
+                this.vehicle = v.parentObj
+                this.mode = "drive"
+                this.vehicle.setVelocity(1000)
+            }
         })
-        // this.player.onCollide("captainSeat", (v) => {
-        //     if (this.mode == "walk") {
-        //         this.vehicle = v.parent.parent
-        //         this.mode = "drive"
-        //         this.vehicle.setVelocity(1000)
-        //     }
-        // })
     }
 }

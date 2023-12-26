@@ -17,9 +17,15 @@ export default class Player {
 			k.body({mass: 1, }),
         ])
 		
+        // movement
 		this.velocity = 0
 		this.angle = 0
         this.setupControls()
+
+        // interaction
+        this.mode = "walk" // walk, drive
+        this.vehicle = null // vehicle object, for player to enter/exit/drive
+        this.setupPilotControls()
     }
 
     update() {
@@ -63,5 +69,15 @@ export default class Player {
                 this.velocity = -maxReverseVelocity
             }
 		})
+    }
+
+    setupPilotControls() {
+        this.player.onCollide("ship", (v) => {
+            if (this.mode == "walk") {
+                this.vehicle = v.parent
+                this.mode = "drive"
+                this.vehicle.setVelocity(1000)
+            }
+        })
     }
 }

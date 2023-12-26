@@ -9,7 +9,7 @@ export default class Map {
 		this.map = k.add([
 			k.rect(300, wallWidth),
 			k.pos(k.width()/2, 10),
-			k.body({mass: 1000}),
+			k.body({mass: 10000}),
 			k.area(),
 		])
 

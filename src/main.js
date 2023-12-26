@@ -1,74 +1,57 @@
 import kaboom from "kaboom"
-
-// Initialize kaboom
 const k = kaboom()
 
-// Load the sprite
-k.loadSprite("bean", "sprites/pirate.png")
+k.setBackground(k.BLACK)	
 
-k.setBackground(k.BLACK)
-
-k.camScale(0.2)
-
-// create map anchor centered on the screen to rotate around
-const map = k.add([
-	k.pos(k.width()/2, k.height()/2),
-	k.anchor("center"),
-	k.rotate(0),
-	k.circle(100),
-	k.color(k.BLUE)
-])
-
-// add children, relative to parent
-map.add([
-	k.pos(500, 0),
-	k.rect(1000, 300),
-	k.area(),
-	k.body(),
-	"obstacle",
+// fixed text bottom right
+const debug = k.add([
+	k.text("Hello world!", {size: 10}),
+	k.pos(k.width() - 10, k.height() - 10),
+	k.anchor("botright"),
+	k.fixed(),
 ])
 
 
-// Define a class for your custom object
-class Bean {
+
+class Map {
+	constructor() {
+		this.map = k.add([
+			k.rect(300, 50),
+			k.pos(k.width()/2, 10),
+			k.body({mass: 1000}),
+			k.area(),
+		])
+
+	}
+}
+class Player {
     constructor() {
-
-		this.bean = k.add([
+		this.player = k.add([
             k.pos(k.width()/2, k.height()/2),
 			k.anchor("center"),
 			k.area(),
-			k.circle(100),
-			k.body()
-            // k.sprite("bean"),
+			k.circle(20),
+			k.body({mass: 1, }),
         ])
 		
-		this.velocity = { y: 0}
+		this.velocity = 0
 		this.angle = 0
         
         this.setupControls()
     }
 
-    // Method to update the bean's position based on velocity
     update() {
-		// follow camera
-		camPos(this.bean.pos)
+		k.camPos(this.player.pos)
 
-		this.bean.move(0, this.velocity.y)
-		// update map position to relative to bean
-		map.pos = this.bean.pos
-
-		// move the children relative to the anchor point
-		map.children.forEach(child => {
-			child.move(
-				this.velocity.y * Math.sin(this.angle * Math.PI / 180), 
-				this.velocity.y * -Math.cos(this.angle * Math.PI / 180)
-			);
-		});
+		this.player.move(
+			this.velocity * Math.sin(-this.angle * Math.PI / 180), 
+			this.velocity * Math.cos(-this.angle * Math.PI / 180)
+		)
 
 		// decrease velocity
-		this.velocity.y *= 0.99
-		if (this.velocity.y < 0.1 && this.velocity.y > -0.1) {
-			this.velocity.y = 0
+		this.velocity *= 0.93
+		if (this.velocity < 10 && this.velocity > -10) {
+			this.velocity = 0
 		}
     }
 
@@ -77,30 +60,31 @@ class Bean {
 		const rotateSpeed = 3
         k.onKeyDown("a", () => {
 			this.angle -= rotateSpeed
-			map.angle += rotateSpeed
+			k.camRot(0 - this.angle)
+			this.player.angle = this.angle
 		})
         k.onKeyDown("d", () => {
 			this.angle += rotateSpeed
-			map.angle -=  rotateSpeed
+			k.camRot(0 - this.angle)
+			this.player.angle = this.angle
 		})
 		
         k.onKeyDown("w", () => {
-			if (this.bean.isColliding("obstacle")) {
-				alert("hit")
-				this.velocity.y = 0
-				return
-			}
-			this.velocity.y = -300
+			this.velocity = -300
 		})
         k.onKeyDown("s", () => {
-			this.velocity.y = 300
+			this.velocity = 300
 		})
     }
 }
-// Create a new Bean instance
-const myBean = new Bean()
+// Create a new Player instance
+const myPlayer = new Player()
+const map = new Map()
 
 // Update loop
 k.onUpdate(() => {
-	myBean.update()
+	myPlayer.update()
+
+	// debug player position angle and velocity
+	debug.text = `x: ${myPlayer.player.pos.x.toFixed(2)} y: ${myPlayer.player.pos.y.toFixed(2)} angle: ${myPlayer.angle.toFixed(2)} velocity: ${myPlayer.velocity.toFixed(2)}`
 })

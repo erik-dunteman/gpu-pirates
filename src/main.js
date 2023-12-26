@@ -16,10 +16,10 @@ const debug = k.add([
 	k.fixed(),
 ])
 
-
-const myPlayer = new Player()
 const map = new Map()
+
 const ship = new Ship()
+const myPlayer = new Player()
 
 // Update loop
 k.onUpdate(() => {
@@ -28,4 +28,8 @@ k.onUpdate(() => {
 
 	// debug player position angle and velocity
 	debug.text = `mode: ${myPlayer.mode}`
+})
+
+k.onCollide("player", "ship", (p, s) => {
+	console.log("player collided with ship")
 })

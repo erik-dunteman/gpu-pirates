@@ -12,9 +12,11 @@ export default class Player {
 		this.player = k.add([
             k.pos(k.width()/2, k.height()/2),
 			k.anchor("center"),
+            k.circle(width/2),
+            k.color(0, 0, 255),
 			k.area(),
-			k.circle(width/2),
 			k.body({mass: 1, }),
+            "player"
         ])
 		
         // movement
@@ -73,11 +75,14 @@ export default class Player {
 
     setupPilotControls() {
         this.player.onCollide("ship", (v) => {
-            if (this.mode == "walk") {
-                this.vehicle = v.parent
-                this.mode = "drive"
-                this.vehicle.setVelocity(1000)
-            }
+            console.log("touching ship")
         })
+        // this.player.onCollide("captainSeat", (v) => {
+        //     if (this.mode == "walk") {
+        //         this.vehicle = v.parent.parent
+        //         this.mode = "drive"
+        //         this.vehicle.setVelocity(1000)
+        //     }
+        // })
     }
 }

@@ -4,31 +4,22 @@ import Player from "./player.js"
 import Ship from "./ship.js"
 
 const k = kaboom()
-k.setBackground(k.BLACK)
 export default k
 
-
-// fixed text bottom right
-const debug = k.add([
-	k.text("Hello world!", {size: 30}),
-	k.pos(k.width() - 10, k.height() - 10),
-	k.anchor("botright"),
-	k.fixed(),
-])
-
 const map = new Map()
-const ship = new Ship()
+const ship = new Ship(50, 300, 0)
+const ship2 = new Ship(-1200, 300, 0)
 const myPlayer = new Player()
 
 // Update loop
 k.onUpdate(() => {
 	myPlayer.update()
 	ship.update()
-
-
 	// debug player position angle and velocity
-	debug.text = `mode: ${myPlayer.mode}`
+	debug.text = `${myPlayer.vehicle?.velocity}`
 })
 
-k.debug.inspect = true
-k.debug.showLog = true
+k.camScale(1)
+
+// k.debug.inspect =s true
+// k.debug.showLog = true

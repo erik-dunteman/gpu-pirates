@@ -5,6 +5,8 @@ const shipWidth = 450
 const shipLength = 1000
 const shipMass = 100
 
+const shipHP = 2
+
 const forwardAcceleration = .5
 const drag = .2
 const maxForwardVelocity = 5000
@@ -33,6 +35,9 @@ export default class Ship {
             "shipBody"
         ])
 
+        // add hit points to the ship
+        this.hp = shipHP
+
         // add bow
         const bow = this.ship.add([
             k.pos(-shipWidth * .5, -shipLength * .6),
@@ -49,6 +54,21 @@ export default class Ship {
 
         this.ship.collisionIgnore = ["shipRail"] // make sure the ship doesn't collide with its own rails
         bow.collisionIgnore = ["shipRail"]
+
+        bow.onCollide("shipBody", (targetShip) => {
+            // ignore collision with self
+            if (targetShip.id == bow.parent.id) {
+                return
+            }
+            console.log("collided with other ship body", targetShip.id)
+            // sum the velocities of the two ships to measure impact
+            const targetVel = targetShip.parentObj.getVelocity()
+            const thisVel = this.getVelocity()
+            const impactVelocity = Math.sqrt(Math.pow(targetVel.x-thisVel.x, 2) + Math.pow(targetVel.y-thisVel.y, 2))
+
+            // damage the ship based on impact velocity
+            targetShip.parentObj.hp -= impactVelocity / 100
+        })
 
         // register parent so we can access it from collision events
         this.ship.parentObj = this
@@ -231,6 +251,11 @@ export default class Ship {
     }
 
     update() {
+        // destroy ship if hp is 0
+        if (this.hp <= 0) {
+            this.ship.destroy()
+        }
+
         // move
         const {x, y} = this.getVelocity()
         this.ship.move(x, y)

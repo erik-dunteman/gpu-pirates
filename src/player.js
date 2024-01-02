@@ -32,6 +32,7 @@ export default class Player {
         this.setupShipControls()
     }
 
+
     update() {
         // move relative to ship deck
         if (this.vehicle != null) {
@@ -50,7 +51,7 @@ export default class Player {
                 this.velocity = 0
             }
         }
-        else if (this.mode == "drive") {
+        else if (this.mode == "drive" && this.vehicle != null) {
             k.camScale(.2)
             k.camPos(this.vehicle.ship.pos)
             k.camRot(0 - this.vehicle.angle)
@@ -65,7 +66,7 @@ export default class Player {
                 this.angle -= rotateSpeed
                 k.camRot(0 - this.angle)
                 this.player.angle = this.angle
-            } else if (this.mode === "drive") {
+            } else if (this.mode === "drive" && this.vehicle != null) {
                 this.vehicle.left()
             }
 		})
@@ -74,7 +75,7 @@ export default class Player {
                 this.angle += rotateSpeed
                 k.camRot(0 - this.angle)
                 this.player.angle = this.angle
-            } else if (this.mode === "drive") {
+            } else if (this.mode === "drive" && this.vehicle != null) {
                 this.vehicle.right()
             }
 		})
@@ -85,7 +86,7 @@ export default class Player {
                 if (this.velocity > maxForwardVelocity) {
                     this.velocity = maxForwardVelocity
                 }
-            } else if (this.mode === "drive") {
+            } else if (this.mode === "drive" && this.vehicle != null) {
                 this.vehicle.accelerate()
             }
 		})
@@ -126,7 +127,7 @@ export default class Player {
 
         k.onKeyDown("e", () => {
             if (this.mode == "drive") {
-                this.vehicle.fire()
+                // this.vehicle.fire()
             }
         })
     }

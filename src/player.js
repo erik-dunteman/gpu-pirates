@@ -29,13 +29,37 @@ export default class Player {
         this.setupControls()
 
         // interaction
+        this.activeCollisions = []
+
         this.mode = "walk" // walk, swim, drive
         this.vehicle = null // vehicle object, for player to enter/exit/drive
         this.setupShipControls()
+        this.setupIslandControls()
     }
 
 
     update() {
+
+        // clean up state from collisions that have ended
+        let walkingSurfaces = false
+        let vehicles = false
+        for (let i = 0; i < this.activeCollisions.length; i++) {
+            if (this.activeCollisions[i] == "shipDeck") {
+                walkingSurfaces = true
+                vehicles = true
+            }
+            if (this.activeCollisions[i] == "island") {
+                walkingSurfaces = true
+            }
+        }
+        if (!walkingSurfaces) {
+            this.mode = "swim"
+        } else if (walkingSurfaces && this.mode !== "drive") {
+            this.mode = "walk"
+        }
+        if (!vehicles) {
+            this.vehicle = null
+        }
 
         // move relative to ship deck
         if (this.vehicle != null) {
@@ -122,15 +146,29 @@ export default class Player {
 		})
     }
 
+    setupIslandControls() {
+        this.player.onCollide("island", (d) => {
+            this.activeCollisions.push("island")
+        })
+        this.player.onCollideEnd("island", (d) => {
+            this.activeCollisions.splice(this.activeCollisions.indexOf("island"), 1)
+        })
+    }
+
+
     setupShipControls() {
         // enter/exit vehicle
         this.player.onCollide("shipDeck", (d) => {
-            this.mode = "walk"
+            this.activeCollisions.push("shipDeck")
             this.vehicle = d.parent.parentObj
         })
 
         this.player.onCollideEnd("shipDeck", (d) => {
-            this.vehicle = null
+            // pop single "shipDeck" from activeCollisions
+            this.activeCollisions.splice(this.activeCollisions.indexOf("shipDeck"), 1)
+
+            // wait for update loop to terminate vehicle, 
+            // since there could be multiple collisions
         })
 
         this.player.onCollide("shipWheel", (v) => {

@@ -167,9 +167,6 @@ export default class Ship {
             "shipSail"
         ])
 
-        
-        
-
 
         // add the captain's spot
         const captainSpot = this.ship.add([
@@ -181,7 +178,6 @@ export default class Ship {
             k.anchor("center"),
             "shipRail"
         ])
-
         this.ship.add([
             k.pos(0, shipLength / 6),
             k.rect(50, 10),
@@ -190,6 +186,7 @@ export default class Ship {
 			k.anchor("center"),
             "shipWheel"
         ])
+
 
         this.velocity = 0
         this.angle = 0

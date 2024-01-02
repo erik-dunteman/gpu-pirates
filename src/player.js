@@ -116,11 +116,17 @@ export default class Player {
             }
         })
 
-        k.onKeyDown("e", () => {
+        k.onKeyDown("q", () => {
             if (this.mode == "drive") {
                 this.mode = "walk"
                 this.angle = this.vehicle.angle
                 k.camScale(1)
+            }
+        })
+
+        k.onKeyDown("e", () => {
+            if (this.mode == "drive") {
+                this.vehicle.fire()
             }
         })
     }

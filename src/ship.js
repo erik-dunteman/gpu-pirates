@@ -5,12 +5,12 @@ const shipWidth = 450
 const shipLength = 1000
 const shipMass = 100
 
-const shipHP = 2
+const shipHP = 10
 
 const forwardAcceleration = .5
 const drag = .2
 const maxForwardVelocity = 5000
-const turnSpeed = 0.5
+const turnSpeedFactor = 0.001
 
 
 const railWidth = 10
@@ -187,10 +187,23 @@ export default class Ship {
             "shipSail"
         ])
 
-
         // add the captain's spot
-        const captainSpot = this.ship.add([
-            k.pos(0, shipLength / 6 - 20),
+        this.captainSpot = this.ship.add([
+            k.pos(0, shipLength / 6),
+            k.anchor("center"),
+        ])
+
+        // player visual while driving, since moving the player object causes issues
+        this.captainPlayerIcon = this.captainSpot.add([
+            k.pos(0, 0),
+            k.circle(20),
+            k.color(k.WHITE),
+            k.anchor("center"),
+        ])
+        this.captainPlayerIcon.hidden = true // hide by default
+            
+        this.captainSpot.add([
+            k.pos(0, -50),
             k.rect(100, 20),
             k.color(k.rgb(railColor.r, railColor.g, railColor.b)),
             k.area(),
@@ -198,8 +211,8 @@ export default class Ship {
             k.anchor("center"),
             "shipRail"
         ])
-        this.ship.add([
-            k.pos(0, shipLength / 6),
+        this.captainSpot.add([
+            k.pos(0, -30),
             k.rect(50, 10),
             k.color(200, 0, 0),
             k.area(),
@@ -211,13 +224,13 @@ export default class Ship {
         this.velocity = 0
         this.angle = 0
 
-        k.onCollide("shipRail", "island", (ship, map) => {
+        k.onCollide("shipRail", "islandBody", (ship, map) => {
             ship.parent.parentObj.velocity = 0
         })
-        k.onCollide("shipBow", "island", (ship, map) => {
+        k.onCollide("shipBow", "islandBody", (ship, map) => {
             ship.parent.parentObj.velocity = 0
         })
-        k.onCollide("shipBody", "island", (ship, map) => {
+        k.onCollide("shipBody", "islandBody", (ship, map) => {
             ship.parentObj.velocity = 0
         })
 	}
@@ -237,11 +250,24 @@ export default class Ship {
     }
 
     right() {
-        this.angle += turnSpeed
+        // turn speed scales with velocity
+        let s = Math.abs(this.velocity) * turnSpeedFactor
+        if (s > 0.5) {
+            s = 0.5
+        } else if (s < 0.01) {
+            s = 0.01
+        }
+        this.angle += s
     }
 
     left() {
-        this.angle -= turnSpeed
+        let s = Math.abs(this.velocity) * turnSpeedFactor
+        if (s > 0.5) {
+            s = 0.5
+        } else if (s < 0.01) {
+            s = 0.01
+        }
+        this.angle -= s
     }
     
 

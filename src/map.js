@@ -23,16 +23,27 @@ export default class Map {
 
 		k.setBackground(k.BLUE)
 
+        
+
         this.map = k.add(
 			[
 				k.pos(300, 0),
 				k.rect(500, 1000),
 				k.color(k.BLACK),
 				k.area(),
-				k.body({ isStatic: true }),
             	"island"
         	]
 		);
+
+        this.map.add([
+            k.pos(0, 0),
+				k.rect(500, 1000),
+				k.color(k.BLACK),
+				k.area(),
+				k.body({ isStatic: true }),
+            	"islandBody"
+            ]
+        );
 
 
 
@@ -58,13 +69,22 @@ export default class Map {
             points.push(point);
         }
 
-        this.map.add([
+        const island = this.map.add([
             k.pos(x, y),
+            k.polygon(points),
+            k.area(),
+            "island"
+        ]);
+
+        // add body
+        island.add([
+            k.pos(0, 0),
             k.polygon(points),
             k.color(k.GREEN),
             k.area(),
-			k.body({ isStatic: true }),
-            "island"
+            k.body({ isStatic: true }),
+            k.anchor("center"),
+            "islandBody"
         ]);
     }
 }

@@ -1,6 +1,6 @@
 
 // WebSocket server URL (replace with your server's URL)
-const serverURL = 'ws://localhost:8080/ws';
+const serverURL = 'ws://monorail.proxy.rlwy.net:37692/ws';
 
 let socket;
 

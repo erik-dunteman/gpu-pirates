@@ -109,6 +109,9 @@ func runGameState() {
 	for {
 		event := <-eventChan
 		switch event.Type {
+		case "reset":
+			// reset game state
+			initGameState()
 		case "addPlayer":
 			// add player to game state if it doesn't exist
 			gameState.AddPlayer(&Player{ID: event.PlayerID, X: 0, Y: 0})

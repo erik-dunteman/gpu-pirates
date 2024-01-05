@@ -74,6 +74,10 @@ func handleWebSocketConnection(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/ws", handleWebSocketConnection)
+	http.HandleFunc("/reset", func(w http.ResponseWriter, r *http.Request) {
+		eventChan <- Event{Type: "reset"}
+		w.WriteHeader(http.StatusOK)
+	})
 
 	// start the game state
 	initGameState()

@@ -4,7 +4,7 @@
 		"build": "esbuild --bundle src/main.js --outfile=www/main.js --minify",
 		"dev": "esbuild --bundle src/main.js --outfile=www/main.js --servedir=www",
 		"bundle": "npm run build && mkdir -p dist && zip -r dist/game.zip www -x \"**/.DS_Store\"",
-		"start": "cd www && python3 -m http.server 8000"
+		"start": "http-server -c-1 -p 8000"
 	},
 	"dependencies": {
 		"kaboom": "^3000.1.17"

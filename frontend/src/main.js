@@ -5,19 +5,23 @@ const k = kaboom()
 
 k.loadSprite("bean", "sprites/bean.png")
 
+k.setBackground(k.BLACK)
+k.add([
+	k.text("Hello, world!"),
+])
+
 const createPlayer = (id, main, x, y) => {
 	// create a new player
 	const p = k.add([
-		k.sprite("bean"),
+		k.circle(50),
 		k.pos(x, y),
-		k.scale(0.5),
 		k.anchor("center"),
 		k.z(2),
 		"player", // shared tag
 		id, // unique tag
 	])
 	p.add([
-		k.rect(1000, 1000),
+		k.rect(10000, 10000),
 		k.color(k.BLUE),
 		k.opacity(0.3),
 		k.anchor("center"),

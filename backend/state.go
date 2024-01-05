@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -19,10 +20,32 @@ type Event struct {
 
 // players on map
 
+const PlayerMaxVelocity = 500 // 5 meters per second
+const PlayerTurnSpeed = 1     // 1 degree per tick
+
 type Player struct {
-	ID string `json:"id"`
-	X  int    `json:"x"`
-	Y  int    `json:"y"`
+	ID       string  `json:"id"`
+	X        int64   `json:"x"`
+	Y        int64   `json:"y"`
+	Velocity int64   `json:"velocity"`
+	Angle    float64 `json:"angle"`
+}
+
+func (p *Player) Update() {
+	const tickRate = 100 // ticks per second
+	t := time.NewTicker((1000 / tickRate) * time.Millisecond)
+	for {
+		<-t.C
+		vel := p.Velocity
+		if vel > PlayerMaxVelocity {
+			vel = PlayerMaxVelocity
+		}
+		p.X += int64(float64(vel) * math.Cos(p.Angle*math.Pi/180) / float64(tickRate))
+		p.Y += int64(float64(vel) * -math.Sin(p.Angle*math.Pi/180) / float64(tickRate))
+
+		// decay velocity
+		p.Velocity -= p.Velocity / 100
+	}
 }
 
 type GameState struct {
@@ -34,7 +57,11 @@ type GameStateVisible struct {
 	Players    map[string]*Player `json:"players"`
 }
 
-func (g *GameState) AddPlayer(player *Player) {
+func (g *GameState) AddPlayer(playerID string) {
+	// create player
+	player := &Player{ID: playerID, X: 0, Y: 0, Velocity: 200, Angle: 90}
+	go player.Update()
+
 	// add player if it doesn't exist
 	if gameState.Players[player.ID] == nil {
 		fmt.Println("Adding player", player.ID)
@@ -59,7 +86,7 @@ func (g *GameState) GetPlayer(playerID string) *Player {
 }
 
 // not technically circular radius, but square radius
-func (g *GameState) FilterForClientUpdate(playerID string, radius int) GameStateVisible {
+func (g *GameState) FilterForClientUpdate(playerID string, radius int64) GameStateVisible {
 	// reference player
 	player := g.GetPlayer(playerID)
 	if player == nil {
@@ -94,10 +121,9 @@ func initChannels() {
 
 func debug() {
 	for {
-
 		fmt.Println("Players:")
 		for _, p := range gameState.Players {
-			fmt.Printf("  %s: (%d, %d)\n", p.ID, p.X, p.Y)
+			fmt.Printf("  %s: (%d, %d, %d, %f)\n", p.ID, p.X, p.Y, p.Velocity, p.Angle)
 		}
 		fmt.Println()
 		time.Sleep(1 * time.Second)
@@ -114,7 +140,7 @@ func runGameState() {
 			initGameState()
 		case "addPlayer":
 			// add player to game state if it doesn't exist
-			gameState.AddPlayer(&Player{ID: event.PlayerID, X: 0, Y: 0})
+			gameState.AddPlayer(event.PlayerID)
 		case "removePlayer":
 			// remove player from game state if it exists
 			gameState.RemovePlayer(event.PlayerID)
@@ -123,13 +149,13 @@ func runGameState() {
 			player.Y--
 		case "keyDownLeft":
 			player := gameState.Players[event.PlayerID]
-			player.X--
+			player.Angle -= PlayerTurnSpeed
 		case "keyDownDown":
 			player := gameState.Players[event.PlayerID]
 			player.Y++
 		case "keyDownRight":
 			player := gameState.Players[event.PlayerID]
-			player.X++
+			player.Angle += PlayerTurnSpeed
 		default:
 			// do nothing
 		}
@@ -139,7 +165,7 @@ func runGameState() {
 func sendGameStateUpdates(conn *websocket.Conn, playerID string) {
 	for {
 		// Retrieve the game state or relevant data that you want to send to the client
-		filteredState := gameState.FilterForClientUpdate(playerID, 500)
+		filteredState := gameState.FilterForClientUpdate(playerID, 10_0000) // 100 meters
 
 		// Convert the game state to JSON (you can use a library like encoding/json)
 		jsonData, err := json.Marshal(filteredState)

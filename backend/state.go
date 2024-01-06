@@ -20,8 +20,8 @@ type Event struct {
 
 // players on map
 
-const PlayerMaxVelocity = 500 // 5 meters per second
-const PlayerTurnSpeed = 1     // 1 degree per tick
+const PlayerMaxVelocity = 5000 // 5 meters per second
+const PlayerTurnSpeed = 3      // 1 degree per tick
 
 type Player struct {
 	ID       string  `json:"id"`
@@ -31,20 +31,45 @@ type Player struct {
 	Angle    float64 `json:"angle"`
 }
 
-func (p *Player) Update() {
-	const tickRate = 100 // ticks per second
+func (p *Player) accelerate() {
+	p.Velocity += 200
+	if p.Velocity > PlayerMaxVelocity {
+		p.Velocity = PlayerMaxVelocity
+	}
+}
+
+func (p *Player) reverse() {
+	p.Velocity -= 200
+	if p.Velocity < -PlayerMaxVelocity*0.4 { // reverse speed is 40% of forward speed
+		p.Velocity = -PlayerMaxVelocity * 0.4
+	}
+}
+
+func (p *Player) turnLeft() {
+	p.Angle += PlayerTurnSpeed
+}
+
+func (p *Player) turnRight() {
+	p.Angle -= PlayerTurnSpeed
+}
+
+func (p *Player) update() {
+	const tickRate = 60 // ticks per second
 	t := time.NewTicker((1000 / tickRate) * time.Millisecond)
+
 	for {
 		<-t.C
 		vel := p.Velocity
 		if vel > PlayerMaxVelocity {
 			vel = PlayerMaxVelocity
 		}
+
 		p.X += int64(float64(vel) * math.Cos(p.Angle*math.Pi/180) / float64(tickRate))
 		p.Y += int64(float64(vel) * -math.Sin(p.Angle*math.Pi/180) / float64(tickRate))
 
 		// decay velocity
-		p.Velocity -= p.Velocity / 100
+		decay := 0.95
+		p.Velocity = int64(float64(p.Velocity) * decay)
 	}
 }
 
@@ -59,8 +84,8 @@ type GameStateVisible struct {
 
 func (g *GameState) AddPlayer(playerID string) {
 	// create player
-	player := &Player{ID: playerID, X: 0, Y: 0, Velocity: 200, Angle: 90}
-	go player.Update()
+	player := &Player{ID: playerID, X: 0, Y: 0, Velocity: 0, Angle: 90}
+	go player.update()
 
 	// add player if it doesn't exist
 	if gameState.Players[player.ID] == nil {
@@ -146,16 +171,16 @@ func runGameState() {
 			gameState.RemovePlayer(event.PlayerID)
 		case "keyDownUp":
 			player := gameState.Players[event.PlayerID]
-			player.Y--
+			player.accelerate()
 		case "keyDownLeft":
 			player := gameState.Players[event.PlayerID]
-			player.Angle -= PlayerTurnSpeed
+			player.turnLeft()
 		case "keyDownDown":
 			player := gameState.Players[event.PlayerID]
-			player.Y++
+			player.reverse()
 		case "keyDownRight":
 			player := gameState.Players[event.PlayerID]
-			player.Angle += PlayerTurnSpeed
+			player.turnRight()
 		default:
 			// do nothing
 		}
@@ -165,7 +190,7 @@ func runGameState() {
 func sendGameStateUpdates(conn *websocket.Conn, playerID string) {
 	for {
 		// Retrieve the game state or relevant data that you want to send to the client
-		filteredState := gameState.FilterForClientUpdate(playerID, 10_0000) // 100 meters
+		filteredState := gameState.FilterForClientUpdate(playerID, 200_000) // 200 meters
 
 		// Convert the game state to JSON (you can use a library like encoding/json)
 		jsonData, err := json.Marshal(filteredState)

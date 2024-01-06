@@ -6,39 +6,44 @@ const k = kaboom()
 k.loadSprite("bean", "sprites/bean.png")
 
 k.setBackground(k.BLACK)
+
 k.add([
-	k.text("Hello, world!"),
+	k.text("Hello, world!",
+	{
+		size: 480,
+		color: k.WHITE,
+	}),
+])
+
+k.add([
+	k.rect(1000, 10000),
+	k.pos(100, -11000),
 ])
 
 const createPlayer = (id, main, x, y) => {
 	// create a new player
 	const p = k.add([
-		k.circle(50),
+		k.circle(500),
 		k.pos(x, y),
 		k.anchor("center"),
 		k.z(2),
 		"player", // shared tag
 		id, // unique tag
 	])
-	p.add([
-		k.rect(10000, 10000),
-		k.color(k.BLUE),
-		k.opacity(0.3),
-		k.anchor("center"),
-		k.z(1),
-	])
 
-	// if this is the main player, follow with cam
-	if (main) {
-		k.onUpdate(() => {
-			k.camPos(p.pos)
-		})
-	}
+	// fog of war, for debug
+	// p.add([
+	// 	k.rect(20_000, 20_000),
+	// 	k.color(k.BLUE),
+	// 	k.opacity(0.3),
+	// 	k.anchor("center"),
+	// 	k.z(1),
+	// ])
 
 	return
 }
 
-const movePlayer = (player, x, y) => {
+const movePlayer = (player, x, y, camFollow) => {
 	player.moveTo(k.vec2(x, y))
 }
 
@@ -64,6 +69,10 @@ k.onUpdate(() => {
 		} else {
 			playerObj = playerMatches[0]
 			movePlayer(playerObj, localState.thisPlayer.x, localState.thisPlayer.y)
+			
+			k.camScale(0.05)
+			k.camPos(playerObj.pos)
+			k.camRot(-90 + localState.thisPlayer.angle)
 		}
 	}
 
@@ -109,6 +118,8 @@ k.onKeyDown('d', () => {
   // Send 'd' to the server when the 'd' key is pressed
   sendDataToServer('d');
 });
+
+k.debug.inspect = true
 
 // Connect to the server when the page loads (you can call this function at an appropriate time)
 connectToServer();

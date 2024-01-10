@@ -25,27 +25,21 @@ func handleWebSocketConnection(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
+	// create new player
 	playerID := uuid.New().String()
+	UserEventChan <- UserEvent{PlayerID: playerID, Type: "addPlayer"}
 
-	// add player to game state
-	eventChan <- Event{PlayerID: playerID, Type: "addPlayer"}
-
-	// Define a cleanup function to be executed when the connection is closed
-	cleanup := func() {
-		// Perform any cleanup actions here (e.g., remove the player from the game state)
-		eventChan <- Event{PlayerID: playerID, Type: "removePlayer"}
-	}
-
-	// Set the close handler to execute the cleanup function
 	conn.SetCloseHandler(func(code int, text string) error {
-		cleanup()
+		// cleanup code
+		UserEventChan <- UserEvent{PlayerID: playerID, Type: "removePlayer"}
 		return nil
 	})
 
-	go sendGameStateUpdates(conn, playerID)
+	// start streaming game state to client
+	go StreamGameState(conn, playerID)
 
+	// listen for user input
 	for {
-		// Read a message from the WebSocket client
 		messageType, p, err := conn.ReadMessage()
 		if err != nil {
 			log.Println(err)
@@ -54,16 +48,15 @@ func handleWebSocketConnection(w http.ResponseWriter, r *http.Request) {
 
 		if messageType == websocket.TextMessage {
 			message := string(p)
-
 			switch message {
 			case "w":
-				eventChan <- Event{PlayerID: playerID, Type: "keyDownUp"}
+				UserEventChan <- UserEvent{PlayerID: playerID, Type: "keyDownUp"}
 			case "a":
-				eventChan <- Event{PlayerID: playerID, Type: "keyDownLeft"}
+				UserEventChan <- UserEvent{PlayerID: playerID, Type: "keyDownLeft"}
 			case "s":
-				eventChan <- Event{PlayerID: playerID, Type: "keyDownDown"}
+				UserEventChan <- UserEvent{PlayerID: playerID, Type: "keyDownDown"}
 			case "d":
-				eventChan <- Event{PlayerID: playerID, Type: "keyDownRight"}
+				UserEventChan <- UserEvent{PlayerID: playerID, Type: "keyDownRight"}
 			default:
 				// Print the received character
 				fmt.Printf("Received: %s\n", message)
@@ -75,15 +68,17 @@ func handleWebSocketConnection(w http.ResponseWriter, r *http.Request) {
 func main() {
 	http.HandleFunc("/ws", handleWebSocketConnection)
 	http.HandleFunc("/reset", func(w http.ResponseWriter, r *http.Request) {
-		eventChan <- Event{Type: "reset"}
+		UserEventChan <- UserEvent{Type: "reset"}
 		w.WriteHeader(http.StatusOK)
 	})
 
 	// start the game state
-	initGameState()
-	go debug()
-	go initChannels()
-	go runGameState()
+	InitGlobalState()
+	go InitUserEventChan()
+	go RunGlobalState()
+
+	// debug logging
+	go DebugGlobalState()
 
 	// Start the WebSocket server
 	port := "8080"

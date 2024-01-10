@@ -1,5 +1,6 @@
 import kaboom from "kaboom"
 import { connectToServer, sendDataToServer, localState } from './socket';
+import { gameMap } from './map';
 
 const k = kaboom()
 
@@ -19,6 +20,20 @@ k.add([
 	k.rect(1000, 10000),
 	k.pos(100, -11000),
 ])
+
+// add all islands
+for (const island of gameMap.islands) {
+	const vertices = []
+	for (const vertex of island.vertices) {
+		vertices.push(k.vec2(vertex[0], vertex[1]))
+	}
+	k.add([
+		k.polygon(vertices),
+		k.color(k.GREEN),
+		k.anchor("center"),
+		k.z(0),
+	])
+}
 
 const createPlayer = (id, main, x, y) => {
 	// create a new player
@@ -70,7 +85,7 @@ k.onUpdate(() => {
 			playerObj = playerMatches[0]
 			movePlayer(playerObj, localState.thisPlayer.x, localState.thisPlayer.y)
 			
-			k.camScale(0.05)
+			k.camScale(0.005)
 			k.camPos(playerObj.pos)
 			k.camRot(-90 + localState.thisPlayer.angle)
 		}

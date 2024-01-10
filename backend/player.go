@@ -5,10 +5,8 @@ import (
 	"time"
 )
 
-// players on map
-
 const PlayerMaxVelocity = 5000 // 5 meters per second
-const PlayerTurnSpeed = 3      // 1 degree per tick
+const PlayerTurnSpeed = 3      // 3 degrees per tick
 
 type Player struct {
 	ID       string  `json:"id"`

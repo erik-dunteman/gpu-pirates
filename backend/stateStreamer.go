@@ -16,7 +16,9 @@ type UserVisibleState struct {
 }
 
 func StreamGameState(conn *websocket.Conn, playerID string) {
-	ticker := time.NewTicker(16 * time.Millisecond) // 60 fps, roughly
+	const tickRate = 60 // ticks per second
+	ticker := time.NewTicker((1000 / tickRate) * time.Millisecond)
+
 	for {
 
 		// Filter the game state for the client so they only see within a certain radius

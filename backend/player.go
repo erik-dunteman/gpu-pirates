@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math"
 	"time"
 )
@@ -16,6 +17,7 @@ type Player struct {
 	Velocity int64   `json:"velocity"`
 	Angle    float64 `json:"angle"`
 	ShipID   string  `json:"shipID"` // use string ID instead of pointer to avoid circular reference
+	Controls string  `json:"controls"`
 }
 
 func (p *Player) accelerate() {
@@ -55,8 +57,20 @@ func (p *Player) unboard(ship *Ship) {
 	}
 }
 
+func (p *Player) pilot(ship *Ship) {
+	fmt.Println("Piloting ship", ship.ID)
+	ship.Pilot = p
+	p.Controls = "pilot"
+}
+
+func (p *Player) unpilot(ship *Ship) {
+	fmt.Println("Unpiloting ship", ship.ID)
+	ship.Pilot = nil
+	p.Controls = "walk"
+}
+
 func (p *Player) update() {
-	const tickRate = 60 // ticks per second
+	const tickRate = 120 // ticks per second
 	t := time.NewTicker((1000 / tickRate) * time.Millisecond)
 
 	for {
@@ -88,7 +102,7 @@ func (p *Player) update() {
 		p.Y = newY
 
 		// decay velocity
-		decay := 0.95
+		decay := 0.98
 		p.Velocity = int64(float64(p.Velocity) * decay)
 	}
 }

@@ -1,7 +1,9 @@
 import kaboom from "kaboom"
 import { connectToServer, sendDataToServer, localState } from './socket';
+import { createShip } from './ship';
+import { createPlayer } from './player';
 
-const k = kaboom()
+export default k = kaboom()
 
 k.loadSprite("bean", "sprites/bean.png")
 k.loadSprite("compass", "sprites/compass.png")
@@ -33,48 +35,6 @@ const updateCompass = () => {
 	compassObj.angle = localState.thisPlayer.angle + 90
 }
 
-
-const createPlayer = (id, main, x, y) => {
-	// create a new player
-	const p = k.add([
-		k.circle(500),
-		k.pos(x, y),
-		k.anchor("center"),
-		k.z(2),
-		k.area(),
-		"player", // shared tag
-		id, // unique tag
-	])
-	if (main) {
-		p.onCollide("ship", (s) => {
-			for (shipID in localState.ships) {
-				if (s.is(shipID)) {
-					sendDataToServer("board:" + shipID)
-				}
-			}
-		})
-
-		p.onCollideEnd("ship", (s) => {
-			for (shipID in localState.ships) {
-				if (s.is(shipID)) {
-					sendDataToServer("unboard:" + shipID)
-				}
-			}
-		})
-	}
-
-	// fog of war, for debug
-	// p.add([
-	// 	k.rect(200_000, 200_000),
-	// 	k.color(k.RED),
-	// 	k.opacity(0.3),
-	// 	k.anchor("center"),
-	// 	k.z(1),
-	// ])
-
-	return
-}
-
 const createIsland = (island) => {
 	// create a new island
 	const vertices = []
@@ -88,21 +48,6 @@ const createIsland = (island) => {
 		k.z(0),
 		"island", // shared tag
 		island.ID, // unique tag
-	])
-}
-
-const createShip = (ship) => {
-	console.log("creating ship", ship)
-	// create a new ship
-	const s = k.add([
-		k.rect(5000, 8000),
-		k.color(k.YELLOW),
-		k.pos(ship.x, ship.y),
-		k.anchor("center"),
-		k.z(2),
-		k.area(),
-		"ship", // shared tag
-		ship.id, // unique taag
 	])
 }
 
@@ -194,6 +139,7 @@ k.onUpdate(() => {
 		}
 		const shipObj = shipMatches[0]
 		shipObj.moveTo(k.vec2(localState.ships[shipID].x, localState.ships[shipID].y))
+		shipObj.angle = -localState.ships[shipID].angle - 90
 	}
 })
 

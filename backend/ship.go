@@ -6,7 +6,7 @@ import (
 )
 
 const ShipMaxVelocity = 50_000 // 50 meters per second
-const ShipAcceleration = 2_000 // 2 per second per second
+const ShipAcceleration = 50    // 0.05 per second per second (slow)
 const ShipTurnSpeed = 0.3      // 0.3 degrees per tick
 
 func NewShip(id string, x int64, y int64) *Ship {
@@ -41,7 +41,7 @@ func (s *Ship) turnRight() {
 }
 
 func (s *Ship) update() {
-	const tickRate = 60 // ticks per second
+	const tickRate = 120 // ticks per second
 	t := time.NewTicker((1000 / tickRate) * time.Millisecond)
 
 	for {
@@ -51,10 +51,10 @@ func (s *Ship) update() {
 		newX := s.X + int64(float64(vel)*math.Cos(s.Angle*math.Pi/180)/float64(tickRate))
 		newY := s.Y + int64(float64(vel)*-math.Sin(s.Angle*math.Pi/180)/float64(tickRate))
 		if newX < 0 || newX > maxDimension || newY < 0 || newY > maxDimension {
-			// player is out of bounds, so stop them
+			// ship is out of bounds, so stop it
 			s.Velocity = 0
 
-			// move player back into bounds
+			// move ship back into bounds
 			if newX < 0 {
 				newX = 0
 			}
@@ -82,8 +82,8 @@ func (s *Ship) update() {
 			crew.Y += diffY
 		}
 
-		// // decay velocity
-		// decay := 0.95
-		// s.Velocity = int64(float64(s.Velocity) * decay)
+		// decay velocity
+		decay := 0.99
+		s.Velocity = int64(float64(s.Velocity) * decay)
 	}
 }

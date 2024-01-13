@@ -21,7 +21,7 @@ type GlobalState struct {
 
 func (g *GlobalState) AddPlayer(playerID string) {
 	// create player
-	player := &Player{ID: playerID, X: 1000, Y: 1000, Velocity: 0, Angle: -90}
+	player := &Player{ID: playerID, X: 1000, Y: 1000, Velocity: 0, Angle: -90, Controls: "walk"}
 	go player.update()
 
 	// add player if it doesn't exist
@@ -101,7 +101,7 @@ func InitGlobalState() {
 
 	// add ship
 	ship := NewShip("ship1", 6000, 6000)
-	ship.Velocity = 1000
+	// ship.Velocity = 1000
 	globalState.Ships[ship.ID] = ship
 }
 
@@ -140,16 +140,89 @@ func RunGlobalState() {
 			globalState.RemovePlayer(event.PlayerID)
 		case "keyDownUp":
 			player := globalState.Players[event.PlayerID]
-			player.accelerate()
+
+			switch player.Controls {
+			case "walk":
+				player.accelerate()
+			case "pilot":
+				ship := globalState.Ships[player.ShipID]
+				if ship != nil {
+					ship.accelerate()
+				}
+			default:
+				// do nothing
+			}
 		case "keyDownLeft":
 			player := globalState.Players[event.PlayerID]
-			player.turnLeft()
+			switch player.Controls {
+			case "walk":
+				player.turnLeft()
+			case "pilot":
+				ship := globalState.Ships[player.ShipID]
+				if ship != nil {
+					ship.turnLeft()
+				}
+			default:
+				// do nothing
+			}
 		case "keyDownDown":
 			player := globalState.Players[event.PlayerID]
-			player.reverse()
+			switch player.Controls {
+			case "walk":
+				player.reverse()
+			default:
+				// do nothing
+			}
 		case "keyDownRight":
 			player := globalState.Players[event.PlayerID]
-			player.turnRight()
+			switch player.Controls {
+			case "walk":
+				player.turnRight()
+			case "pilot":
+				ship := globalState.Ships[player.ShipID]
+				if ship != nil {
+					ship.turnRight()
+				}
+			default:
+				// do nothing
+			}
+
+		case "interract":
+			// interract with something
+			interraction := event.Data
+			player := globalState.Players[event.PlayerID]
+			if player == nil {
+				continue
+			}
+			switch interraction {
+			case "pilot":
+				// pilot ship, if player is on an unpiloted ship
+				if player.ShipID == "" {
+					continue
+				}
+				ship := globalState.Ships[player.ShipID]
+				if ship == nil {
+					continue
+				}
+				if ship.Pilot != nil {
+					// ship already has a pilot
+					continue
+				}
+				player.pilot(ship)
+			case "unpilot":
+				// unpilot ship, if player is on a piloted ship
+				if player.ShipID == "" {
+					continue
+				}
+				ship := globalState.Ships[player.ShipID]
+				if ship == nil {
+					continue
+				}
+				player.unpilot(ship)
+			default:
+				// do nothing
+			}
+
 		case "board":
 			// board ship
 			targetShipID := event.Data

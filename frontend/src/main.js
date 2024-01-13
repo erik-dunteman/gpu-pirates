@@ -45,6 +45,23 @@ const createPlayer = (id, main, x, y) => {
 		"player", // shared tag
 		id, // unique tag
 	])
+	if (main) {
+		p.onCollide("ship", (s) => {
+			for (shipID in localState.ships) {
+				if (s.is(shipID)) {
+					sendDataToServer("board:" + shipID)
+				}
+			}
+		})
+
+		p.onCollideEnd("ship", (s) => {
+			for (shipID in localState.ships) {
+				if (s.is(shipID)) {
+					sendDataToServer("unboard:" + shipID)
+				}
+			}
+		})
+	}
 
 	// fog of war, for debug
 	// p.add([
@@ -71,6 +88,21 @@ const createIsland = (island) => {
 		k.z(0),
 		"island", // shared tag
 		island.ID, // unique tag
+	])
+}
+
+const createShip = (ship) => {
+	console.log("creating ship", ship)
+	// create a new ship
+	const s = k.add([
+		k.rect(5000, 8000),
+		k.color(k.YELLOW),
+		k.pos(ship.x, ship.y),
+		k.anchor("center"),
+		k.z(2),
+		k.area(),
+		"ship", // shared tag
+		ship.id, // unique taag
 	])
 }
 
@@ -101,7 +133,7 @@ k.onUpdate(() => {
 			playerObj = playerMatches[0]
 			movePlayer(playerObj, localState.thisPlayer.x, localState.thisPlayer.y)
 			
-			k.camScale(0.05)
+			k.camScale(0.02)
 			k.camPos(playerObj.pos)
 			k.camRot(-90 + localState.thisPlayer.angle)
 			updateCompass()
@@ -151,6 +183,17 @@ k.onUpdate(() => {
 		if (!found) {
 			island.destroy()
 		}
+	}
+
+	// add ships or update them
+	for (const shipID in localState.ships) {
+		const shipMatches = k.get(shipID)
+		if (shipMatches.length === 0) {
+			createShip(localState.ships[shipID])
+			continue
+		}
+		const shipObj = shipMatches[0]
+		shipObj.moveTo(k.vec2(localState.ships[shipID].x, localState.ships[shipID].y))
 	}
 })
 

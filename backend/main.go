@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -47,8 +48,12 @@ func handleWebSocketConnection(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if messageType == websocket.TextMessage {
-			message := string(p)
-			switch message {
+			msg := strings.Split(string(p), ":")
+			if len(msg) < 1 {
+				continue
+			}
+			category := msg[0]
+			switch category {
 			case "w":
 				UserEventChan <- UserEvent{PlayerID: playerID, Type: "keyDownUp"}
 			case "a":
@@ -57,9 +62,22 @@ func handleWebSocketConnection(w http.ResponseWriter, r *http.Request) {
 				UserEventChan <- UserEvent{PlayerID: playerID, Type: "keyDownDown"}
 			case "d":
 				UserEventChan <- UserEvent{PlayerID: playerID, Type: "keyDownRight"}
+			case "board":
+				if len(msg) != 2 {
+					continue
+				}
+				targetShipID := msg[1]
+				UserEventChan <- UserEvent{PlayerID: playerID, Type: "board", Data: targetShipID}
+			case "unboard":
+				if len(msg) != 2 {
+					continue
+				}
+				targetShipID := msg[1]
+				UserEventChan <- UserEvent{PlayerID: playerID, Type: "unboard", Data: targetShipID}
 			default:
 				// Print the received character
-				fmt.Printf("Received: %s\n", message)
+				fmt.Printf("Received: %s\n", msg)
+				// check if it contains
 			}
 		}
 	}

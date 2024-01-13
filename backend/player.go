@@ -6,7 +6,7 @@ import (
 )
 
 const PlayerMaxVelocity = 5_000 // 5 meters per second
-const PlayerAcceleration = 2000 // 0.2 per second per second
+const PlayerAcceleration = 200  // 0.2 per second per second
 const PlayerTurnSpeed = 3       // 3 degrees per tick
 
 type Player struct {
@@ -15,6 +15,7 @@ type Player struct {
 	Y        int64   `json:"y"`
 	Velocity int64   `json:"velocity"`
 	Angle    float64 `json:"angle"`
+	ShipID   string  `json:"shipID"` // use string ID instead of pointer to avoid circular reference
 }
 
 func (p *Player) accelerate() {
@@ -39,6 +40,21 @@ func (p *Player) turnRight() {
 	p.Angle -= PlayerTurnSpeed
 }
 
+func (p *Player) board(ship *Ship) {
+	p.ShipID = ship.ID
+	ship.Crew = append(ship.Crew, p)
+}
+
+func (p *Player) unboard(ship *Ship) {
+	p.ShipID = ""
+	for i, crewMember := range ship.Crew {
+		if crewMember.ID == p.ID {
+			ship.Crew = append(ship.Crew[:i], ship.Crew[i+1:]...)
+			break
+		}
+	}
+}
+
 func (p *Player) update() {
 	const tickRate = 60 // ticks per second
 	t := time.NewTicker((1000 / tickRate) * time.Millisecond)
@@ -46,9 +62,6 @@ func (p *Player) update() {
 	for {
 		<-t.C
 		vel := p.Velocity
-		if vel > PlayerMaxVelocity {
-			vel = PlayerMaxVelocity
-		}
 
 		newX := p.X + int64(float64(vel)*math.Cos(p.Angle*math.Pi/180)/float64(tickRate))
 		newY := p.Y + int64(float64(vel)*-math.Sin(p.Angle*math.Pi/180)/float64(tickRate))
@@ -58,21 +71,21 @@ func (p *Player) update() {
 
 			// move player back into bounds
 			if newX < 0 {
-				p.X = 0
+				newX = 0
 			}
 			if newX > maxDimension {
-				p.X = maxDimension
+				newX = maxDimension
 			}
 			if newY < 0 {
-				p.Y = 0
+				newY = 0
 			}
 			if newY > maxDimension {
-				p.Y = maxDimension
+				newY = maxDimension
 			}
 		}
 
-		p.X += int64(float64(vel) * math.Cos(p.Angle*math.Pi/180) / float64(tickRate))
-		p.Y += int64(float64(vel) * -math.Sin(p.Angle*math.Pi/180) / float64(tickRate))
+		p.X = newX
+		p.Y = newY
 
 		// decay velocity
 		decay := 0.95

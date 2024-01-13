@@ -14,6 +14,7 @@ type UserVisibleState struct {
 	ThisPlayer *Player            `json:"thisPlayer"` // only relavent for sending to client
 	Players    map[string]*Player `json:"players"`
 	Islands    map[string]*Island `json:"islands"`
+	Ships      map[string]*Ship   `json:"ships"`
 }
 
 func StreamGameState(conn *websocket.Conn, playerID string) {

@@ -16,6 +16,7 @@ type UserEvent struct {
 type GlobalState struct {
 	Players map[string]*Player `json:"players"`
 	Islands map[string]*Island `json:"islands"`
+	Ships   map[string]*Ship   `json:"ships"`
 }
 
 func (g *GlobalState) AddPlayer(playerID string) {
@@ -58,6 +59,7 @@ func (g *GlobalState) FilterForUser(playerID string, radius int64) UserVisibleSt
 		ThisPlayer: player,
 		Players:    make(map[string]*Player),
 		Islands:    make(map[string]*Island),
+		Ships:      make(map[string]*Ship),
 	}
 
 	for _, p := range g.Players {
@@ -79,6 +81,12 @@ func (g *GlobalState) FilterForUser(playerID string, radius int64) UserVisibleSt
 		}
 	}
 
+	for _, ship := range g.Ships {
+		if ship.X >= player.X-radius && ship.X <= player.X+radius && ship.Y >= player.Y-radius && ship.Y <= player.Y+radius {
+			state.Ships[ship.ID] = ship
+		}
+	}
+
 	return state
 }
 
@@ -88,7 +96,13 @@ var globalState GlobalState
 func InitGlobalState() {
 	players := make(map[string]*Player)
 	islands := loadIslands()
-	globalState = GlobalState{Players: players, Islands: islands}
+	ships := make(map[string]*Ship)
+	globalState = GlobalState{Players: players, Islands: islands, Ships: ships}
+
+	// add ship
+	ship := NewShip("ship1", 6000, 6000)
+	ship.Velocity = 1000
+	globalState.Ships[ship.ID] = ship
 }
 
 func InitUserEventChan() {
@@ -100,6 +114,10 @@ func DebugGlobalState() {
 		fmt.Println("Players:")
 		for _, p := range globalState.Players {
 			fmt.Printf("  %s: (%d, %d, %d, %f)\n", p.ID, p.X, p.Y, p.Velocity, p.Angle)
+		}
+		fmt.Println("Ships:")
+		for _, s := range globalState.Ships {
+			fmt.Printf("  %s: (%d, %d, %d, %f)\n", s.ID, s.X, s.Y, s.Velocity, s.Angle)
 		}
 		fmt.Println()
 		time.Sleep(1 * time.Second)
@@ -132,6 +150,39 @@ func RunGlobalState() {
 		case "keyDownRight":
 			player := globalState.Players[event.PlayerID]
 			player.turnRight()
+		case "board":
+			// board ship
+			targetShipID := event.Data
+			targetShip := globalState.Ships[targetShipID]
+			if targetShip == nil {
+				continue
+			}
+			player := globalState.Players[event.PlayerID]
+			if player == nil {
+				continue
+			}
+			if player.ShipID != "" {
+				// player is already on a ship
+				continue
+			}
+			player.board(targetShip)
+		case "unboard":
+			// unboard ship
+			targetShipID := event.Data
+			targetShip := globalState.Ships[targetShipID]
+			if targetShip == nil {
+				continue
+			}
+			player := globalState.Players[event.PlayerID]
+			if player == nil {
+				continue
+			}
+			if player.ShipID != targetShipID {
+				// player is not on this ship
+				continue
+			}
+			player.unboard(targetShip)
+
 		default:
 			// do nothing
 		}

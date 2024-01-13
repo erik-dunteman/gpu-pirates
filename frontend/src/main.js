@@ -4,6 +4,7 @@ import { connectToServer, sendDataToServer, localState } from './socket';
 const k = kaboom()
 
 k.loadSprite("bean", "sprites/bean.png")
+k.loadSprite("compass", "sprites/compass.png")
 
 k.setBackground(k.BLACK)
 
@@ -14,6 +15,24 @@ k.add([
 	k.pos(0, 0),
 ])
 
+const updateCompass = () => {
+	const compass = k.get("compass")
+	if (compass.length === 0) {
+		k.add([
+			k.sprite("compass"),
+			k.pos(k.width() - 100, 100),
+			k.fixed(),
+			k.anchor("center"),
+			k.scale(0.5),
+			k.z(3),
+			"compass",
+		])
+		return
+	}
+	const compassObj = compass[0]
+	compassObj.angle = localState.thisPlayer.angle + 90
+}
+
 
 const createPlayer = (id, main, x, y) => {
 	// create a new player
@@ -23,19 +42,18 @@ const createPlayer = (id, main, x, y) => {
 		k.anchor("center"),
 		k.z(2),
 		k.area(),
-		k.body({mass: 100}),
 		"player", // shared tag
 		id, // unique tag
 	])
 
 	// fog of war, for debug
-	p.add([
-		k.rect(200_000, 200_000),
-		k.color(k.RED),
-		k.opacity(0.3),
-		k.anchor("center"),
-		k.z(1),
-	])
+	// p.add([
+	// 	k.rect(200_000, 200_000),
+	// 	k.color(k.RED),
+	// 	k.opacity(0.3),
+	// 	k.anchor("center"),
+	// 	k.z(1),
+	// ])
 
 	return
 }
@@ -86,6 +104,7 @@ k.onUpdate(() => {
 			k.camScale(0.05)
 			k.camPos(playerObj.pos)
 			k.camRot(-90 + localState.thisPlayer.angle)
+			updateCompass()
 		}
 	}
 
@@ -115,7 +134,6 @@ k.onUpdate(() => {
 		const islandMatches = k.get(islandID)
 		if (islandMatches.length === 0) {
 			createIsland(localState.islands[islandID])
-			console.log("created island")
 			continue
 		}
 	}

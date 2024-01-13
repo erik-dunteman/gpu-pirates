@@ -61,6 +61,7 @@ func (p *Player) pilot(ship *Ship) {
 	fmt.Println("Piloting ship", ship.ID)
 	ship.Pilot = p
 	p.Controls = "pilot"
+	p.Angle = ship.Angle
 }
 
 func (p *Player) unpilot(ship *Ship) {

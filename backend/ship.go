@@ -34,10 +34,16 @@ func (s *Ship) accelerate() {
 
 func (s *Ship) turnLeft() {
 	s.Angle += ShipTurnSpeed
+	for _, crew := range s.Crew {
+		crew.Angle += ShipTurnSpeed
+	}
 }
 
 func (s *Ship) turnRight() {
 	s.Angle -= ShipTurnSpeed
+	for _, crew := range s.Crew {
+		crew.Angle -= ShipTurnSpeed
+	}
 }
 
 func (s *Ship) update() {

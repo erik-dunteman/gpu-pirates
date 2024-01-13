@@ -100,7 +100,7 @@ func InitGlobalState() {
 	globalState = GlobalState{Players: players, Islands: islands, Ships: ships}
 
 	// add ship
-	ship := NewShip("ship1", 6000, 6000)
+	ship := NewShip("ship1", 10000, 10000)
 	// ship.Velocity = 1000
 	globalState.Ships[ship.ID] = ship
 }

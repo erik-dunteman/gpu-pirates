@@ -7,7 +7,8 @@ let socket;
 
 export let localState = {
     thisPlayer: null,
-    players: {}
+    players: null,
+    islands: null,
 }
 
 // Function to connect to the WebSocket server
@@ -19,7 +20,6 @@ export const connectToServer = () => {
 
   socket.addEventListener('message', (event) => {
     localState = JSON.parse(event.data);
-
   });
 
   socket.addEventListener('close', (event) => {

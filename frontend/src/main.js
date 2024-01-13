@@ -1,6 +1,5 @@
 import kaboom from "kaboom"
 import { connectToServer, sendDataToServer, localState } from './socket';
-import { gameMap } from './map';
 
 const k = kaboom()
 
@@ -8,32 +7,13 @@ k.loadSprite("bean", "sprites/bean.png")
 
 k.setBackground(k.BLACK)
 
+// add game water
 k.add([
-	k.text("Hello, world!",
-	{
-		size: 480,
-		color: k.WHITE,
-	}),
+	k.rect(1_000_000, 1_000_000),
+	k.color(k.BLUE),
+	k.pos(0, 0),
 ])
 
-k.add([
-	k.rect(1000, 10000),
-	k.pos(100, -11000),
-])
-
-// add all islands
-for (const island of gameMap.islands) {
-	const vertices = []
-	for (const vertex of island.vertices) {
-		vertices.push(k.vec2(vertex[0], vertex[1]))
-	}
-	k.add([
-		k.polygon(vertices),
-		k.color(k.GREEN),
-		k.anchor("center"),
-		k.z(0),
-	])
-}
 
 const createPlayer = (id, main, x, y) => {
 	// create a new player
@@ -42,20 +22,38 @@ const createPlayer = (id, main, x, y) => {
 		k.pos(x, y),
 		k.anchor("center"),
 		k.z(2),
+		k.area(),
+		k.body({mass: 100}),
 		"player", // shared tag
 		id, // unique tag
 	])
 
 	// fog of war, for debug
-	// p.add([
-	// 	k.rect(20_000, 20_000),
-	// 	k.color(k.BLUE),
-	// 	k.opacity(0.3),
-	// 	k.anchor("center"),
-	// 	k.z(1),
-	// ])
+	p.add([
+		k.rect(200_000, 200_000),
+		k.color(k.RED),
+		k.opacity(0.3),
+		k.anchor("center"),
+		k.z(1),
+	])
 
 	return
+}
+
+const createIsland = (island) => {
+	// create a new island
+	const vertices = []
+	for (const vertex of island.vertices) {
+		vertices.push(k.vec2(vertex.x, vertex.y))
+	}
+	k.add([
+		k.polygon(vertices),
+		k.color(k.GREEN),
+		k.anchor("center"),
+		k.z(0),
+		"island", // shared tag
+		island.ID, // unique tag
+	])
 }
 
 const movePlayer = (player, x, y, camFollow) => {
@@ -85,7 +83,7 @@ k.onUpdate(() => {
 			playerObj = playerMatches[0]
 			movePlayer(playerObj, localState.thisPlayer.x, localState.thisPlayer.y)
 			
-			k.camScale(0.005)
+			k.camScale(0.05)
 			k.camPos(playerObj.pos)
 			k.camRot(-90 + localState.thisPlayer.angle)
 		}
@@ -109,6 +107,31 @@ k.onUpdate(() => {
 		}
 		if (!found) {
 			player.destroy()
+		}
+	}
+
+	// add islands
+	for (const islandID in localState.islands) {
+		const islandMatches = k.get(islandID)
+		if (islandMatches.length === 0) {
+			createIsland(localState.islands[islandID])
+			console.log("created island")
+			continue
+		}
+	}
+	// remove islands that are no longer in localState.islands
+	for (const island of k.get("island")) {
+		// get all keys in localState.islands
+		const islandIDs = Object.keys(localState.islands)
+		// if the island doesn't exist in localState.islands, remove it
+		let found = false
+		for (const islandID of islandIDs) {
+			if (island.is(islandID)) {
+				found = true
+			}
+		}
+		if (!found) {
+			island.destroy()
 		}
 	}
 })

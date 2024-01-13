@@ -5,8 +5,9 @@ import (
 	"time"
 )
 
-const PlayerMaxVelocity = 5000 // 5 meters per second
-const PlayerTurnSpeed = 3      // 3 degrees per tick
+const PlayerMaxVelocity = 5_000 // 5 meters per second
+const PlayerAcceleration = 2000 // 0.2 per second per second
+const PlayerTurnSpeed = 3       // 3 degrees per tick
 
 type Player struct {
 	ID       string  `json:"id"`
@@ -17,14 +18,14 @@ type Player struct {
 }
 
 func (p *Player) accelerate() {
-	p.Velocity += 200
+	p.Velocity += PlayerAcceleration
 	if p.Velocity > PlayerMaxVelocity {
 		p.Velocity = PlayerMaxVelocity
 	}
 }
 
 func (p *Player) reverse() {
-	p.Velocity -= 200
+	p.Velocity -= PlayerAcceleration
 	if p.Velocity < -PlayerMaxVelocity*0.4 { // reverse speed is 40% of forward speed
 		p.Velocity = -PlayerMaxVelocity * 0.4
 	}
@@ -47,6 +48,27 @@ func (p *Player) update() {
 		vel := p.Velocity
 		if vel > PlayerMaxVelocity {
 			vel = PlayerMaxVelocity
+		}
+
+		newX := p.X + int64(float64(vel)*math.Cos(p.Angle*math.Pi/180)/float64(tickRate))
+		newY := p.Y + int64(float64(vel)*-math.Sin(p.Angle*math.Pi/180)/float64(tickRate))
+		if newX < 0 || newX > maxDimension || newY < 0 || newY > maxDimension {
+			// player is out of bounds, so stop them
+			p.Velocity = 0
+
+			// move player back into bounds
+			if newX < 0 {
+				p.X = 0
+			}
+			if newX > maxDimension {
+				p.X = maxDimension
+			}
+			if newY < 0 {
+				p.Y = 0
+			}
+			if newY > maxDimension {
+				p.Y = maxDimension
+			}
 		}
 
 		p.X += int64(float64(vel) * math.Cos(p.Angle*math.Pi/180) / float64(tickRate))

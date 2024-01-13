@@ -13,6 +13,7 @@ import (
 type UserVisibleState struct {
 	ThisPlayer *Player            `json:"thisPlayer"` // only relavent for sending to client
 	Players    map[string]*Player `json:"players"`
+	Islands    map[string]*Island `json:"islands"`
 }
 
 func StreamGameState(conn *websocket.Conn, playerID string) {
@@ -22,7 +23,7 @@ func StreamGameState(conn *websocket.Conn, playerID string) {
 	for {
 
 		// Filter the game state for the client so they only see within a certain radius
-		filteredState := globalState.FilterForUser(playerID, 200_000) // 200 meter radius
+		filteredState := globalState.FilterForUser(playerID, 100_000) // 100 meter radius
 
 		// Send filtered game state to client
 		jsonData, err := json.Marshal(filteredState)

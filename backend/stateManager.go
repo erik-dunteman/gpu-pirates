@@ -15,11 +15,12 @@ type UserEvent struct {
 
 type GlobalState struct {
 	Players map[string]*Player `json:"players"`
+	Islands map[string]*Island `json:"islands"`
 }
 
 func (g *GlobalState) AddPlayer(playerID string) {
 	// create player
-	player := &Player{ID: playerID, X: 0, Y: 0, Velocity: 0, Angle: 90}
+	player := &Player{ID: playerID, X: 1000, Y: 1000, Velocity: 0, Angle: -90}
 	go player.update()
 
 	// add player if it doesn't exist
@@ -53,7 +54,11 @@ func (g *GlobalState) FilterForUser(playerID string, radius int64) UserVisibleSt
 		return UserVisibleState{} // return empty game state
 	}
 
-	state := UserVisibleState{ThisPlayer: player, Players: make(map[string]*Player)}
+	state := UserVisibleState{
+		ThisPlayer: player,
+		Players:    make(map[string]*Player),
+		Islands:    make(map[string]*Island),
+	}
 
 	for _, p := range g.Players {
 		if p.ID == playerID {
@@ -61,6 +66,16 @@ func (g *GlobalState) FilterForUser(playerID string, radius int64) UserVisibleSt
 		}
 		if p.X >= player.X-radius && p.X <= player.X+radius && p.Y >= player.Y-radius && p.Y <= player.Y+radius {
 			state.Players[p.ID] = p
+		}
+	}
+
+	for _, island := range g.Islands {
+		for _, vertex := range island.Vertices {
+			// if any of the vertices are within the radius, then add the island
+			if vertex.X >= player.X-radius && vertex.X <= player.X+radius && vertex.Y >= player.Y-radius && vertex.Y <= player.Y+radius {
+				state.Islands[island.ID] = island
+				break
+			}
 		}
 	}
 
@@ -72,7 +87,8 @@ var globalState GlobalState
 
 func InitGlobalState() {
 	players := make(map[string]*Player)
-	globalState = GlobalState{Players: players}
+	islands := loadIslands()
+	globalState = GlobalState{Players: players, Islands: islands}
 }
 
 func InitUserEventChan() {

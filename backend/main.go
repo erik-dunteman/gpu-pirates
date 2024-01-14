@@ -102,7 +102,7 @@ func main() {
 	go RunGlobalState()
 
 	// debug logging
-	// go DebugGlobalState()
+	go DebugGlobalState()
 
 	// Start the WebSocket server
 	port := "8080"

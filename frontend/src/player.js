@@ -26,6 +26,7 @@ export const createPlayer = (id, main, x, y) => {
     p.onCollide("ship", (s) => {
         for (shipID in localState.ships) {
             if (s.is(shipID)) {
+                console.log("boarding", shipID)
                 sendDataToServer("board:" + shipID)
             }
         }
@@ -33,6 +34,7 @@ export const createPlayer = (id, main, x, y) => {
     p.onCollideEnd("ship", (s) => {
         for (shipID in localState.ships) {
             if (s.is(shipID)) {
+                console.log("unboarding", shipID)
                 sendDataToServer("unboard:" + shipID)
             }
         }

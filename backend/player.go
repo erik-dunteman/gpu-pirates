@@ -6,21 +6,24 @@ import (
 	"time"
 )
 
-const PlayerMaxVelocity = 5_000 // 5 meters per second
-const PlayerAcceleration = 200  // 0.2 per second per second
-const PlayerTurnSpeed = 3       // 3 degrees per tick
+const PlayerMaxVelocity = 5_000      // 5 meters per second
+const PlayerAcceleration = 200       // 0.2 per second per second
+const PlayerTurnSpeed = 3            // 3 degrees per tick
+const playerDecayGracePeriodMS = 300 // 300ms before decay starts. If anyone's ping is less than this, bad time.
 
 type Player struct {
-	ID       string  `json:"id"`
-	X        int64   `json:"x"`
-	Y        int64   `json:"y"`
-	Velocity int64   `json:"velocity"`
-	Angle    float64 `json:"angle"`
-	ShipID   string  `json:"shipID"` // use string ID instead of pointer to avoid circular reference
-	Controls string  `json:"controls"`
+	ID             string    `json:"id"`
+	X              int64     `json:"x"`
+	Y              int64     `json:"y"`
+	Velocity       int64     `json:"velocity"`
+	Angle          float64   `json:"angle"`
+	ShipID         string    `json:"shipID"` // use string ID instead of pointer to avoid circular reference
+	Controls       string    `json:"controls"`
+	lastAccelerate time.Time // only decay if it's been time since last accelerate, to prevent jerky velocity
 }
 
 func (p *Player) accelerate() {
+	p.lastAccelerate = time.Now()
 	p.Velocity += PlayerAcceleration
 	if p.Velocity > PlayerMaxVelocity {
 		p.Velocity = PlayerMaxVelocity
@@ -102,8 +105,10 @@ func (p *Player) update() {
 		p.X = newX
 		p.Y = newY
 
-		// decay velocity
-		decay := 0.98
-		p.Velocity = int64(float64(p.Velocity) * decay)
+		if time.Since(p.lastAccelerate) > playerDecayGracePeriodMS*time.Millisecond {
+			// decay velocity
+			decay := 0.93
+			p.Velocity = int64(float64(p.Velocity) * decay)
+		}
 	}
 }

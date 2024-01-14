@@ -17,7 +17,7 @@ k.add([
 	k.pos(0, 0),
 ])
 
-const updateCompass = () => {
+const updateHud = () => {
 	const compass = k.get("compass")
 	if (compass.length === 0) {
 		k.add([
@@ -33,6 +33,20 @@ const updateCompass = () => {
 	}
 	const compassObj = compass[0]
 	compassObj.angle = localState.thisPlayer.angle + 90
+
+	const velocity = k.get("velocityDisplay")
+	if (velocity.length === 0) {
+		k.add([
+			k.pos(k.width() - 100, 1000),
+			k.fixed(),
+			k.anchor("center"),
+			k.text("hi"),
+			k.z(3),
+			"velocityDisplay",
+		])
+		return
+	}
+	const velocityObj = velocity[0]
 }
 
 const createIsland = (island) => {
@@ -81,7 +95,7 @@ k.onUpdate(() => {
 			k.camScale(0.02)
 			k.camPos(playerObj.pos)
 			k.camRot(-90 + localState.thisPlayer.angle)
-			updateCompass()
+			updateHud()
 		}
 	}
 

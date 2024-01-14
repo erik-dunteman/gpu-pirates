@@ -5,9 +5,11 @@ import (
 	"time"
 )
 
-const ShipMaxVelocity = 50_000 // 50 meters per second
-const ShipAcceleration = 50    // 0.05 per second per second (slow)
-const ShipTurnSpeed = 0.3      // 0.3 degrees per tick
+const ShipMaxVelocity = 50_000      // 50 meters per second
+const ShipAcceleration = 5          // 0.005 per second per second (slow)
+const ShipDecay = 0.999             // velocity *= this, per tick
+const ShipTurnSpeed = 0.3           // 0.3 degrees per tick
+const shipDecayGracePeriodMS = 1000 // 1000ms before decay starts.
 
 func NewShip(id string, x int64, y int64) *Ship {
 	ship := &Ship{ID: id, X: x, Y: y, Velocity: 0, Angle: -90}
@@ -16,33 +18,51 @@ func NewShip(id string, x int64, y int64) *Ship {
 }
 
 type Ship struct {
-	ID       string    `json:"id"`
-	X        int64     `json:"x"`
-	Y        int64     `json:"y"`
-	Velocity int64     `json:"velocity"`
-	Angle    float64   `json:"angle"`
-	Crew     []*Player `json:"crew"`
-	Pilot    *Player   `json:"pilot"`
+	ID             string    `json:"id"`
+	X              int64     `json:"x"`
+	Y              int64     `json:"y"`
+	Velocity       int64     `json:"velocity"`
+	Angle          float64   `json:"angle"`
+	Crew           []*Player `json:"crew"`
+	Pilot          *Player   `json:"pilot"`
+	lastAccelerate time.Time // only decay if it's been time since last accelerate, to prevent jerky velocity
+
 }
 
 func (s *Ship) accelerate() {
+	s.lastAccelerate = time.Now()
 	s.Velocity += ShipAcceleration
 	if s.Velocity > ShipMaxVelocity {
 		s.Velocity = ShipMaxVelocity
 	}
 }
 
+func translatePlayerOnShipRotation(s *Ship, p *Player, angleDiff float64) {
+	p.Angle += angleDiff
+	// distance to ship origin unchanged
+	xOffset := float64(p.X) - float64(s.X)
+	yOffset := float64(p.Y) - float64(s.Y)
+	rad := math.Sqrt(math.Pow(xOffset, 2) + math.Pow(yOffset, 2))
+	// Use Atan2 to get the original angle in all quadrants
+	origAngle := math.Atan2(yOffset, xOffset) * 180 / math.Pi
+	newAngle := origAngle - angleDiff
+	newXOffset := rad * math.Cos(newAngle*math.Pi/180)
+	newYOffset := rad * math.Sin(newAngle*math.Pi/180)
+	p.X = s.X + int64(newXOffset)
+	p.Y = s.Y + int64(newYOffset)
+}
+
 func (s *Ship) turnLeft() {
 	s.Angle += ShipTurnSpeed
-	for _, crew := range s.Crew {
-		crew.Angle += ShipTurnSpeed
+	for _, p := range s.Crew {
+		translatePlayerOnShipRotation(s, p, ShipTurnSpeed)
 	}
 }
 
 func (s *Ship) turnRight() {
 	s.Angle -= ShipTurnSpeed
-	for _, crew := range s.Crew {
-		crew.Angle -= ShipTurnSpeed
+	for _, p := range s.Crew {
+		translatePlayerOnShipRotation(s, p, -ShipTurnSpeed)
 	}
 }
 
@@ -88,8 +108,9 @@ func (s *Ship) update() {
 			crew.Y += diffY
 		}
 
-		// decay velocity
-		decay := 0.99
-		s.Velocity = int64(float64(s.Velocity) * decay)
+		if time.Since(s.lastAccelerate) > shipDecayGracePeriodMS*time.Millisecond {
+			// decay velocity
+			s.Velocity = int64(float64(s.Velocity) * ShipDecay)
+		}
 	}
 }

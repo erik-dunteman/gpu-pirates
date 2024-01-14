@@ -10,8 +10,20 @@ export const createShip = (ship) => {
     const shipLength = 9000 * shipScale
     const shipWidth = 5000 * shipScale
 
-	// create a new ship
-	const s = k.add([
+    // create a new ship
+    const s = k.add([
+        k.rect(shipWidth, shipLength),
+        k.opacity(0),
+        k.anchor("center"),
+        k.rotate(ship.angle + 90),
+		k.pos(ship.x, ship.y),
+        "ship", // shared tag
+		ship.id, // unique taag
+    ])
+
+	// // add ship deck and collision zone
+	s.add([
+        k.pos(-shipWidth/2, -shipLength/2),
         k.polygon([
             k.vec2(shipWidth, 0),
             k.vec2(shipWidth, shipLength * 0.7),
@@ -21,11 +33,8 @@ export const createShip = (ship) => {
         ]
         ),
 		k.color(k.rgb(deckColor.r, deckColor.g, deckColor.b)),
-		k.pos(ship.x, ship.y),
-		k.anchor("center"),
 		k.z(1),
 		k.area(),
-        k.rotate(ship.angle + 90),
 		"ship", // shared tag
 		ship.id, // unique taag
 	])
@@ -34,7 +43,7 @@ export const createShip = (ship) => {
     s.add([
         k.rect(1200, 300),
         k.color(k.rgb(255, 0, 0)),
-        k.pos(shipWidth / 2, 4000),
+        k.pos(0, -shipLength/2 + 4000),
         k.anchor("center"),
         k.z(2),
         k.area(),

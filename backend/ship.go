@@ -3,6 +3,8 @@ package main
 import (
 	"math"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 const ShipMaxVelocity = 50_000      // 50 meters per second
@@ -21,11 +23,42 @@ func NewShip(id string, x int64, y int64) *Ship {
 }
 
 type Cannon struct {
+	ID        string  `json:"id"`
+	Side      string  `json:"side"`
+	Angle     float64 `json:"angle"`
+	Pos       int64   `json:"pos"`
+	Operator  *Player `json:"operator"`
+	rateLimit time.Time
+}
+
+func (c *Cannon) fire() {
+	if time.Since(c.rateLimit) < interractRateLimit*time.Millisecond {
+		return
+	}
+	c.rateLimit = time.Now()
+	cannonID := uuid.New().String()
+	ball := &CannonBall{ID: cannonID, X: c.Operator.X, Y: c.Operator.Y, Velocity: 7000, Angle: c.Angle}
+	go ball.update()
+	globalState.CannonBalls[ball.ID] = ball
+}
+
+type CannonBall struct {
 	ID       string  `json:"id"`
-	Side     string  `json:"side"`
+	X        int64   `json:"x"`
+	Y        int64   `json:"y"`
+	Velocity int64   `json:"velocity"`
 	Angle    float64 `json:"angle"`
-	Pos      int64   `json:"pos"`
-	Operator *Player `json:"operator"`
+}
+
+func (c *CannonBall) update() {
+	const tickRate = 120 // ticks per second
+	t := time.NewTicker((1000 / tickRate) * time.Millisecond)
+	for {
+		<-t.C
+		vel := c.Velocity
+		c.X += int64(float64(vel) * math.Cos(c.Angle*math.Pi/180) / float64(tickRate))
+		c.Y += int64(float64(vel) * -math.Sin(c.Angle*math.Pi/180) / float64(tickRate))
+	}
 }
 
 type Ship struct {

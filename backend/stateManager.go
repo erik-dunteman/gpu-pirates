@@ -15,9 +15,10 @@ type UserEvent struct {
 }
 
 type GlobalState struct {
-	Players map[string]*Player `json:"players"`
-	Islands map[string]*Island `json:"islands"`
-	Ships   map[string]*Ship   `json:"ships"`
+	Players     map[string]*Player     `json:"players"`
+	Islands     map[string]*Island     `json:"islands"`
+	Ships       map[string]*Ship       `json:"ships"`
+	CannonBalls map[string]*CannonBall `json:"cannonBalls"`
 }
 
 func (g *GlobalState) AddPlayer(playerID string) {
@@ -67,10 +68,11 @@ func (g *GlobalState) FilterForUser(playerID string, radius int64) UserVisibleSt
 	}
 
 	state := UserVisibleState{
-		ThisPlayer: player,
-		Players:    make(map[string]*Player),
-		Islands:    make(map[string]*Island),
-		Ships:      make(map[string]*Ship),
+		ThisPlayer:  player,
+		Players:     make(map[string]*Player),
+		Islands:     make(map[string]*Island),
+		Ships:       make(map[string]*Ship),
+		CannonBalls: make(map[string]*CannonBall),
 	}
 
 	for _, p := range g.Players {
@@ -98,6 +100,12 @@ func (g *GlobalState) FilterForUser(playerID string, radius int64) UserVisibleSt
 		}
 	}
 
+	for _, cannonBall := range g.CannonBalls {
+		if cannonBall.X >= player.X-radius && cannonBall.X <= player.X+radius && cannonBall.Y >= player.Y-radius && cannonBall.Y <= player.Y+radius {
+			state.CannonBalls[cannonBall.ID] = cannonBall
+		}
+	}
+
 	return state
 }
 
@@ -108,7 +116,8 @@ func InitGlobalState() {
 	players := make(map[string]*Player)
 	islands := loadIslands()
 	ships := make(map[string]*Ship)
-	globalState = GlobalState{Players: players, Islands: islands, Ships: ships}
+	cannonBalls := make(map[string]*CannonBall)
+	globalState = GlobalState{Players: players, Islands: islands, Ships: ships, CannonBalls: cannonBalls}
 
 	// add ship s
 	ship1 := NewShip("The Sea++", 10000, 10000)
@@ -130,6 +139,10 @@ func DebugGlobalState() {
 		fmt.Println("Ships:")
 		for _, s := range globalState.Ships {
 			fmt.Printf("  %s: (%d, %d, %d, %f)\n", s.ID, s.X, s.Y, s.Velocity, s.Angle)
+		}
+		fmt.Println("CannonBalls:")
+		for _, c := range globalState.CannonBalls {
+			fmt.Printf("  %s: (%d, %d, %d, %f)\n", c.ID, c.X, c.Y, c.Velocity, c.Angle)
 		}
 		fmt.Println()
 		time.Sleep(1 * time.Second)
@@ -329,7 +342,21 @@ func RunGlobalState() {
 				continue
 			}
 			player.unboard(targetShip)
-
+		case "fireCannon":
+			player := globalState.Players[event.PlayerID]
+			if player == nil {
+				continue
+			}
+			if player.ShipID == "" {
+				continue
+			}
+			// fire cannon
+			cannonID := event.Data
+			cannon := globalState.Ships[player.ShipID].GetCannon(cannonID)
+			if cannon == nil {
+				continue
+			}
+			cannon.fire()
 		default:
 			// do nothing
 		}

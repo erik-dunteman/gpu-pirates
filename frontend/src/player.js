@@ -128,7 +128,7 @@ export const createPlayer = (id, main, x, y) => {
     });
 
     p.onKeyDown('r', () => {
-        if (p._interact === "cannon") {
+        if (localState.thisPlayer.controls === "cannon") {
             sendDataToServer('r:'+p._interractTarget) // fire cannon if possible
         }
     });

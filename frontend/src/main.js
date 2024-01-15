@@ -73,6 +73,21 @@ const createIsland = (island) => {
 	])
 }
 
+const createCannonball = (cannonball) => {
+	// create a new cannonball
+	console.log("creating cannonball", cannonball)
+	const c = k.add([
+		k.circle(500),
+		k.pos(cannonball.x, cannonball.y),
+		k.color(k.rgb(50, 50, 50)),
+		k.anchor("center"),
+		k.z(3),
+		k.area(),
+		"cannonball", // shared tag
+		cannonball.id, // unique tag
+	])
+}
+
 const movePlayer = (player, x, y, camFollow) => {
 	player.moveTo(k.vec2(x, y))
 }
@@ -175,6 +190,34 @@ k.onUpdate(() => {
 		for (const cannon of shipObj.get("cannon")) {
 			cannon.angle = localState.ships[shipID].cannons[cannon.cannonId].angle + shipObj.angle // relative to ship since cannons are children of ship so will rotate with it
 		}
+	}
+
+	// remove ships that are no longer in localState.ships
+	for (const ship of k.get("ship")) {
+		// get all keys in localState.ships
+		const shipIDs = Object.keys(localState.ships)
+		// if the ship doesn't exist in localState.ships, remove it
+		let found = false
+		for (const shipID of shipIDs) {
+			if (ship.is(shipID)) {
+				found = true
+			}
+		}
+		if (!found) {
+			ship.destroy()
+		}
+	}
+
+	// add cannonballs or update them
+	for (const cannonBallID in localState.cannonBalls) {
+		const cannonBallMatches = k.get(cannonBallID)
+		if (cannonBallMatches.length === 0) {
+			createCannonball(localState.cannonBalls[cannonBallID])
+			continue
+		}
+		const cannonBallObj = cannonBallMatches[0]
+		cannonBallObj.moveTo(k.vec2(localState.cannonBalls[cannonBallID].x, localState.cannonBalls[cannonBallID].y))
+		cannonBallObj.angle = -localState.cannonBalls[cannonBallID].angle - 90
 	}
 })
 

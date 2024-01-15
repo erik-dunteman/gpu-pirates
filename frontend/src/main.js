@@ -18,23 +18,29 @@ k.add([
 	k.z(0),
 ])
 
-const velocity = k.add([
-    k.text("0 Knots"),
-	k.pos(k.width() - 100, 200),
+const hud = k.add([
+	k.rect(150, k.height()),
+	k.pos(k.width(), 0),
+	k.anchor("topright"),
+	k.color(k.WHITE),
 	k.fixed(),
-	k.anchor("center"),
-    { value: 0 },
-	k.scale(0.7),
+	k.opacity(0.2),
 	k.z(10),
 ])
 
-const compass = k.add([
+const velocity = hud.add([
+    k.text("0 Knots"),
+	k.pos(-75, 170),
+	k.anchor("center"),
+    { value: 0 },
+	k.scale(0.7),
+])
+
+const compass = hud.add([
 	k.sprite("compass"),
-	k.pos(k.width() - 100, 100),
-	k.fixed(),
+	k.pos(-75, 75),
 	k.anchor("center"),
 	k.scale(0.5),
-	k.z(10),
 	"compass",
 ])
 
@@ -46,7 +52,6 @@ const updateHud = () => {
 		velocity.hidden = false
 		const v = localState.ships[localState.thisPlayer.shipID].velocity
 		velocity.text = Math.round(v * 1.94384 / 1000) + " Knots"
-		return
 	} else {
 		velocity.hidden = true
 	}
@@ -95,9 +100,16 @@ k.onUpdate(() => {
 			playerObj = playerMatches[0]
 			movePlayer(playerObj, localState.thisPlayer.x, localState.thisPlayer.y)
 			
-			k.camScale(0.02)
 			k.camPos(playerObj.pos)
 			k.camRot(-90 + localState.thisPlayer.angle)
+			if (localState.thisPlayer.controls === "crowsNest") {
+				k.camScale(0.005)
+			} else if (localState.thisPlayer.controls === "pilot" || localState.thisPlayer.controls === "cannon") {
+				k.camScale(0.015)
+			} else {
+				// walk
+				k.camScale(0.04)
+			}
 			updateHud()
 		}
 	}
@@ -159,27 +171,6 @@ k.onUpdate(() => {
 		shipObj.angle = -localState.ships[shipID].angle - 90
 	}
 })
-
-// Example key bindings
-k.onKeyDown('w', () => {
-  // Send 'w' to the server when the 'w' key is pressed
-  sendDataToServer('w');
-});
-
-k.onKeyDown('a', () => {
-  // Send 'a' to the server when the 'a' key is pressed
-  sendDataToServer('a');
-});
-
-k.onKeyDown('s', () => {
-  // Send 's' to the server when the 's' key is pressed
-  sendDataToServer('s');
-});
-
-k.onKeyDown('d', () => {
-  // Send 'd' to the server when the 'd' key is pressed
-  sendDataToServer('d');
-});
 
 k.debug.inspect = true
 

@@ -50,4 +50,15 @@ export const createShip = (ship) => {
         k.area(),
         "pilot",
     ])
+
+    // add crow's nest
+    s.add([
+        k.circle(1000),
+        k.color(k.rgb(railColor.r, railColor.g, railColor.b)),
+        k.pos(0, 0),
+        k.anchor("center"),
+        k.z(2),
+        k.area(),
+        "crowsNest",
+    ])
 }

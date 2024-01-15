@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"math"
 	"time"
 )
@@ -10,6 +9,12 @@ const PlayerMaxVelocity = 5_000      // 5 meters per second
 const PlayerAcceleration = 200       // 0.2 per second per second
 const PlayerTurnSpeed = 3            // 3 degrees per tick
 const playerDecayGracePeriodMS = 300 // 300ms before decay starts. If anyone's ping is less than this, bad time.
+const interractRateLimit = 1000      // 1000ms between interractions
+
+type rateLimits struct {
+	pilot     time.Time
+	crowsNest time.Time
+}
 
 type Player struct {
 	ID             string    `json:"id"`
@@ -20,6 +25,7 @@ type Player struct {
 	ShipID         string    `json:"shipID"` // use string ID instead of pointer to avoid circular reference
 	Controls       string    `json:"controls"`
 	lastAccelerate time.Time // only decay if it's been time since last accelerate, to prevent jerky velocity
+	rateLimits     rateLimits
 }
 
 func (p *Player) accelerate() {
@@ -61,15 +67,53 @@ func (p *Player) unboard(ship *Ship) {
 }
 
 func (p *Player) pilot(ship *Ship) {
-	fmt.Println("Piloting ship", ship.ID)
+	if p.Controls == "pilot" {
+		return
+	}
+	if time.Since(p.rateLimits.pilot) < interractRateLimit*time.Millisecond {
+		return
+	}
+	p.rateLimits.pilot = time.Now()
 	ship.Pilot = p
 	p.Controls = "pilot"
 	p.Angle = ship.Angle
+	p.Velocity = 0 // so you don't overshoot the steering wheel
 }
 
-func (p *Player) unpilot(ship *Ship) {
-	fmt.Println("Unpiloting ship", ship.ID)
+func (p *Player) unPilot(ship *Ship) {
+	if p.Controls != "pilot" {
+		return
+	}
+	if time.Since(p.rateLimits.pilot) < interractRateLimit*time.Millisecond {
+		return
+	}
+	p.rateLimits.pilot = time.Now()
 	ship.Pilot = nil
+	p.Controls = "walk"
+}
+
+func (p *Player) crowsNest(ship *Ship) {
+	if p.Controls == "crowsNest" {
+		return
+	}
+	if time.Since(p.rateLimits.crowsNest) < interractRateLimit*time.Millisecond {
+		return
+	}
+	p.Velocity = 0
+	p.rateLimits.crowsNest = time.Now()
+	ship.CrowsNest = p
+	p.Controls = "crowsNest"
+}
+
+func (p *Player) unCrowsNest(ship *Ship) {
+	if p.Controls != "crowsNest" {
+		return
+	}
+	if time.Since(p.rateLimits.crowsNest) < interractRateLimit*time.Millisecond {
+		return
+	}
+	p.rateLimits.crowsNest = time.Now()
+	ship.CrowsNest = nil
 	p.Controls = "walk"
 }
 

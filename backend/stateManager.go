@@ -39,7 +39,7 @@ func (g *GlobalState) RemovePlayer(playerID string) {
 		if player.ShipID != "" {
 			ship := g.Ships[player.ShipID]
 			if ship != nil {
-				player.unpilot(ship)
+				player.unPilot(ship)
 				player.unboard(ship)
 			}
 		}
@@ -167,6 +167,8 @@ func RunGlobalState() {
 			switch player.Controls {
 			case "walk":
 				player.turnLeft()
+			case "crowsNest":
+				player.turnLeft()
 			case "pilot":
 				ship := globalState.Ships[player.ShipID]
 				if ship != nil {
@@ -188,6 +190,8 @@ func RunGlobalState() {
 			switch player.Controls {
 			case "walk":
 				player.turnRight()
+			case "crowsNest":
+				player.turnRight()
 			case "pilot":
 				ship := globalState.Ships[player.ShipID]
 				if ship != nil {
@@ -206,7 +210,7 @@ func RunGlobalState() {
 			}
 			switch interraction {
 			case "pilot":
-				// pilot ship, if player is on an unpiloted ship
+				// pilot ship, if player is on an unPiloted ship
 				if player.ShipID == "" {
 					continue
 				}
@@ -219,8 +223,8 @@ func RunGlobalState() {
 					continue
 				}
 				player.pilot(ship)
-			case "unpilot":
-				// unpilot ship, if player is on a piloted ship
+			case "unPilot":
+				// unPilot ship, if player is on a piloted ship
 				if player.ShipID == "" {
 					continue
 				}
@@ -228,7 +232,30 @@ func RunGlobalState() {
 				if ship == nil {
 					continue
 				}
-				player.unpilot(ship)
+				player.unPilot(ship)
+			case "crowsNest":
+				if player.ShipID == "" {
+					continue
+				}
+				ship := globalState.Ships[player.ShipID]
+				if ship == nil {
+					continue
+				}
+				if ship.CrowsNest != nil {
+					// ship already has a crowsNest
+					continue
+				}
+				player.crowsNest(ship)
+			case "unCrowsNest":
+				// unCrowsNest ship, if player is in the crows nest of a ship
+				if player.ShipID == "" {
+					continue
+				}
+				ship := globalState.Ships[player.ShipID]
+				if ship == nil {
+					continue
+				}
+				player.unCrowsNest(ship)
 			default:
 				// do nothing
 			}

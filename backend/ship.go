@@ -25,6 +25,7 @@ type Ship struct {
 	Angle          float64   `json:"angle"`
 	Crew           []*Player `json:"crew"`
 	Pilot          *Player   `json:"pilot"`
+	CrowsNest      *Player   `json:"crowsNest"`
 	lastAccelerate time.Time // only decay if it's been time since last accelerate, to prevent jerky velocity
 
 }

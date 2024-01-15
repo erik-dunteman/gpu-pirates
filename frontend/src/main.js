@@ -172,7 +172,7 @@ k.onUpdate(() => {
 	}
 })
 
-k.debug.inspect = true
+// k.debug.inspect = true
 
 // Connect to the server when the page loads (you can call this function at an appropriate time)
 connectToServer();

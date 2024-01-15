@@ -8,7 +8,7 @@ export const createPlayer = (id, main, x, y) => {
 		k.circle(500),
 		k.pos(x, y),
 		k.anchor("center"),
-		k.z(2),
+		k.z(3),
 		k.area(),
 		"player", // shared tag
 		id, // unique tag

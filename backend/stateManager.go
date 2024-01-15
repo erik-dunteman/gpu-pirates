@@ -33,7 +33,17 @@ func (g *GlobalState) AddPlayer(playerID string) {
 
 func (g *GlobalState) RemovePlayer(playerID string) {
 	// delete player if exists
-	if globalState.Players[playerID] != nil {
+	player := g.Players[playerID]
+	if player != nil {
+		// remove player from ship
+		if player.ShipID != "" {
+			ship := g.Ships[player.ShipID]
+			if ship != nil {
+				player.unpilot(ship)
+				player.unboard(ship)
+			}
+		}
+
 		fmt.Println("Removing player", playerID)
 		delete(g.Players, playerID)
 	}

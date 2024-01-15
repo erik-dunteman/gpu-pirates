@@ -15,38 +15,41 @@ k.add([
 	k.rect(1_000_000, 1_000_000),
 	k.color(k.BLUE),
 	k.pos(0, 0),
+	k.z(0),
 ])
 
-const updateHud = () => {
-	const compass = k.get("compass")
-	if (compass.length === 0) {
-		k.add([
-			k.sprite("compass"),
-			k.pos(k.width() - 100, 100),
-			k.fixed(),
-			k.anchor("center"),
-			k.scale(0.5),
-			k.z(3),
-			"compass",
-		])
-		return
-	}
-	const compassObj = compass[0]
-	compassObj.angle = localState.thisPlayer.angle + 90
+const velocity = k.add([
+    k.text("0 Knots"),
+	k.pos(k.width() - 100, 200),
+	k.fixed(),
+	k.anchor("center"),
+    { value: 0 },
+	k.scale(0.7),
+	k.z(10),
+])
 
-	const velocity = k.get("velocityDisplay")
-	if (velocity.length === 0) {
-		k.add([
-			k.pos(k.width() - 100, 1000),
-			k.fixed(),
-			k.anchor("center"),
-			k.text("hi"),
-			k.z(3),
-			"velocityDisplay",
-		])
+const compass = k.add([
+	k.sprite("compass"),
+	k.pos(k.width() - 100, 100),
+	k.fixed(),
+	k.anchor("center"),
+	k.scale(0.5),
+	k.z(10),
+	"compass",
+])
+
+
+const updateHud = () => {
+	compass.angle = localState.thisPlayer.angle + 90
+
+	if (localState.thisPlayer.shipID){
+		velocity.hidden = false
+		const v = localState.ships[localState.thisPlayer.shipID].velocity
+		velocity.text = Math.round(v * 1.94384 / 1000) + " Knots"
 		return
+	} else {
+		velocity.hidden = true
 	}
-	const velocityObj = velocity[0]
 }
 
 const createIsland = (island) => {
@@ -59,7 +62,7 @@ const createIsland = (island) => {
 		k.polygon(vertices),
 		k.color(k.GREEN),
 		k.anchor("center"),
-		k.z(0),
+		k.z(1),
 		"island", // shared tag
 		island.ID, // unique tag
 	])

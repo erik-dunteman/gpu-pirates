@@ -17,6 +17,7 @@ export const createShip = (ship) => {
         k.anchor("center"),
         k.rotate(ship.angle + 90),
 		k.pos(ship.x, ship.y),
+        k.z(2),
         "ship", // shared tag
 		ship.id, // unique taag
     ])
@@ -33,7 +34,7 @@ export const createShip = (ship) => {
         ]
         ),
 		k.color(k.rgb(deckColor.r, deckColor.g, deckColor.b)),
-		k.z(1),
+		k.z(2),
 		k.area(),
 		"ship", // shared tag
 		ship.id, // unique taag

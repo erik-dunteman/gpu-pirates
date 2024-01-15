@@ -14,6 +14,7 @@ const interractRateLimit = 1000      // 1000ms between interractions
 type rateLimits struct {
 	pilot     time.Time
 	crowsNest time.Time
+	cannon    time.Time
 }
 
 type Player struct {
@@ -115,6 +116,35 @@ func (p *Player) unCrowsNest(ship *Ship) {
 	p.rateLimits.crowsNest = time.Now()
 	ship.CrowsNest = nil
 	p.Controls = "walk"
+}
+
+func (p *Player) cannon(cannon *Cannon) {
+	if p.Controls == "cannon" {
+		return
+	}
+	if cannon.Operator != nil {
+		return
+	}
+	if time.Since(p.rateLimits.cannon) < interractRateLimit*time.Millisecond {
+		return
+	}
+	p.rateLimits.cannon = time.Now()
+	p.Velocity = 0
+	p.Controls = "cannon"
+	p.Angle = cannon.Angle
+	cannon.Operator = p
+}
+
+func (p *Player) unCannon(cannon *Cannon) {
+	if p.Controls != "cannon" {
+		return
+	}
+	if time.Since(p.rateLimits.cannon) < interractRateLimit*time.Millisecond {
+		return
+	}
+	p.rateLimits.cannon = time.Now()
+	p.Controls = "walk"
+	cannon.Operator = nil
 }
 
 func (p *Player) update() {

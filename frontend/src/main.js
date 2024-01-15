@@ -108,7 +108,8 @@ k.onUpdate(() => {
 				k.camScale(0.015)
 			} else {
 				// walk
-				k.camScale(0.04)
+				// k.camScale(0.04)
+				k.camScale(0.02)
 			}
 			updateHud()
 		}
@@ -169,6 +170,11 @@ k.onUpdate(() => {
 		const shipObj = shipMatches[0]
 		shipObj.moveTo(k.vec2(localState.ships[shipID].x, localState.ships[shipID].y))
 		shipObj.angle = -localState.ships[shipID].angle - 90
+
+		// update cannon angles
+		for (const cannon of shipObj.get("cannon")) {
+			cannon.angle = localState.ships[shipID].cannons[cannon.cannonId].angle + shipObj.angle // relative to ship since cannons are children of ship so will rotate with it
+		}
 	}
 })
 

@@ -71,7 +71,23 @@ export const createPlayer = (id, main, x, y) => {
         controlHint.hidden = true
     })
 
+    // claiming cannon
+    p.onCollide("cannon", (cannon) => {
+        console.log("cannon", cannon.cannonId)
+        p._interact = "cannon"
+        p._interractTarget = cannon.cannonId
+        controlHint.hidden = false
+        controlHint.text = ""
+    })
+    p.onCollideEnd("cannon", (cannon) => {
+        console.log("cannonEnd", cannon.cannonId)
+        p._interact = null
+        p._interractTarget = null
+        controlHint.hidden = true
+    })
+
     k.onKeyDown('w', () => {
+        // hide control hint once player starts moving
         if (controlHint.text == "WASD to move") {
             controlHint.hidden = true
         }
@@ -103,6 +119,18 @@ export const createPlayer = (id, main, x, y) => {
         if (localState.thisPlayer.controls === "crowsNest") {
             sendDataToServer('e:unCrowsNest') // unCrowsNest current ship if possible
         }
+        if (p._interact === "cannon") {
+            sendDataToServer('e:cannon:'+p._interractTarget) // operate cannon if possible
+        }
+        if (localState.thisPlayer.controls === "cannon") {
+            sendDataToServer('e:unCannon:'+p._interractTarget) // unCannon current ship if possible
+        }
+    });
+
+    p.onKeyDown('r', () => {
+        if (p._interact === "cannon") {
+            sendDataToServer('r:'+p._interractTarget) // fire cannon if possible
+        }
     });
 
     p.onUpdate(() => {
@@ -121,6 +149,14 @@ export const createPlayer = (id, main, x, y) => {
         if (localState.thisPlayer.controls !== "crowsNest" && p._interact === "crowsNest") {
             controlHint.hidden = false
             controlHint.text = "E to climb"
+        }
+        if (localState.thisPlayer.controls === "cannon" && p._interact === "cannon") {
+            controlHint.hidden = false
+            controlHint.text = "R to fire"
+        }
+        if (localState.thisPlayer.controls !== "cannon" && p._interact === "cannon") {
+            controlHint.hidden = false
+            controlHint.text = "E to operate"
         }
     })
 

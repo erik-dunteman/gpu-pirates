@@ -61,4 +61,27 @@ export const createShip = (ship) => {
         k.area(),
         "crowsNest",
     ])
+
+    // for each ship.cannon
+    Object.keys(ship.cannons).forEach(cannonID => {
+        // add cannon
+        const cannon = ship.cannons[cannonID]
+        console.log("adding cannon", cannon)
+        if (cannon.side == "left") {
+            cannon.x = -shipWidth/2
+        } else {
+            cannon.x = shipWidth/2
+        }
+        s.add([
+            k.rect(2000, 600),
+            k.color(k.rgb(50, 50, 50)),
+            k.pos(cannon.x, cannon.pos),
+            k.anchor("center"),
+            k.z(3),
+            k.area(),
+            k.rotate(cannon.angle),
+            "cannon",
+            {cannonId: cannon.id},
+        ])
+    })
 }

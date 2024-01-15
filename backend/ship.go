@@ -12,21 +12,33 @@ const ShipTurnSpeed = 0.3           // 0.3 degrees per tick
 const shipDecayGracePeriodMS = 1000 // 1000ms before decay starts.
 
 func NewShip(id string, x int64, y int64) *Ship {
-	ship := &Ship{ID: id, X: x, Y: y, Velocity: 0, Angle: -90}
+	cannons := make(map[string]*Cannon)
+	cannons["1"] = &Cannon{ID: "1", Side: "left", Angle: 180, Pos: 0}
+	cannons["2"] = &Cannon{ID: "2", Side: "right", Angle: 0, Pos: 0}
+	ship := &Ship{ID: id, X: x, Y: y, Velocity: 0, Angle: -90, Cannons: cannons}
 	go ship.update()
 	return ship
 }
 
+type Cannon struct {
+	ID       string  `json:"id"`
+	Side     string  `json:"side"`
+	Angle    float64 `json:"angle"`
+	Pos      int64   `json:"pos"`
+	Operator *Player `json:"operator"`
+}
+
 type Ship struct {
-	ID             string    `json:"id"`
-	X              int64     `json:"x"`
-	Y              int64     `json:"y"`
-	Velocity       int64     `json:"velocity"`
-	Angle          float64   `json:"angle"`
-	Crew           []*Player `json:"crew"`
-	Pilot          *Player   `json:"pilot"`
-	CrowsNest      *Player   `json:"crowsNest"`
-	lastAccelerate time.Time // only decay if it's been time since last accelerate, to prevent jerky velocity
+	ID             string             `json:"id"`
+	X              int64              `json:"x"`
+	Y              int64              `json:"y"`
+	Velocity       int64              `json:"velocity"`
+	Angle          float64            `json:"angle"`
+	Crew           []*Player          `json:"crew"`
+	Pilot          *Player            `json:"pilot"`
+	CrowsNest      *Player            `json:"crowsNest"`
+	Cannons        map[string]*Cannon `json:"cannons"`
+	lastAccelerate time.Time          // only decay if it's been time since last accelerate, to prevent jerky velocity
 
 }
 
@@ -58,12 +70,18 @@ func (s *Ship) turnLeft() {
 	for _, p := range s.Crew {
 		translatePlayerOnShipRotation(s, p, ShipTurnSpeed)
 	}
+	for _, c := range s.Cannons {
+		c.Angle += ShipTurnSpeed
+	}
 }
 
 func (s *Ship) turnRight() {
 	s.Angle -= ShipTurnSpeed
 	for _, p := range s.Crew {
 		translatePlayerOnShipRotation(s, p, -ShipTurnSpeed)
+	}
+	for _, c := range s.Cannons {
+		c.Angle -= ShipTurnSpeed
 	}
 }
 
@@ -114,4 +132,8 @@ func (s *Ship) update() {
 			s.Velocity = int64(float64(s.Velocity) * ShipDecay)
 		}
 	}
+}
+
+func (s *Ship) GetCannon(id string) *Cannon {
+	return s.Cannons[id]
 }

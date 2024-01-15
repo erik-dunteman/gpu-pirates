@@ -63,11 +63,15 @@ func handleWebSocketConnection(w http.ResponseWriter, r *http.Request) {
 			case "d":
 				UserEventChan <- UserEvent{PlayerID: playerID, Type: "keyDownRight"}
 			case "e":
-				if len(msg) != 2 {
+				if len(msg) < 2 {
 					continue
 				}
 				interraction := msg[1]
-				UserEventChan <- UserEvent{PlayerID: playerID, Type: "interract", Data: interraction}
+				interractionTarget := ""
+				if len(msg) >= 3 {
+					interractionTarget = msg[2]
+				}
+				UserEventChan <- UserEvent{PlayerID: playerID, Type: "interract", Data: interraction, Data2: interractionTarget}
 			case "board":
 				if len(msg) != 2 {
 					continue

@@ -11,6 +11,7 @@ type UserEvent struct {
 	PlayerID string `json:"playerID"`
 	Type     string `json:"type"`
 	Data     string `json:"data"`
+	Data2    string `json:"data2"`
 }
 
 type GlobalState struct {
@@ -109,10 +110,11 @@ func InitGlobalState() {
 	ships := make(map[string]*Ship)
 	globalState = GlobalState{Players: players, Islands: islands, Ships: ships}
 
-	// add ship
-	ship := NewShip("ship1", 10000, 10000)
-	// ship.Velocity = 1000
-	globalState.Ships[ship.ID] = ship
+	// add ship s
+	ship1 := NewShip("The Sea++", 10000, 10000)
+	globalState.Ships[ship1.ID] = ship1
+	ship2 := NewShip("The Rustacian", 25000, 10000)
+	globalState.Ships[ship2.ID] = ship2
 }
 
 func InitUserEventChan() {
@@ -204,6 +206,7 @@ func RunGlobalState() {
 		case "interract":
 			// interract with something
 			interraction := event.Data
+			interractionTarget := event.Data2
 			player := globalState.Players[event.PlayerID]
 			if player == nil {
 				continue
@@ -256,6 +259,40 @@ func RunGlobalState() {
 					continue
 				}
 				player.unCrowsNest(ship)
+			case "cannon":
+				// control cannon, if player is on a ship
+				if player.ShipID == "" {
+					continue
+				}
+				ship := globalState.Ships[player.ShipID]
+				if ship == nil {
+					continue
+				}
+				if interractionTarget == "" {
+					// no cannon specified
+					continue
+				}
+				cannon := ship.GetCannon(interractionTarget)
+				if cannon == nil {
+					// cannon doesn't exist
+					continue
+				}
+				player.cannon(cannon)
+			case "unCannon":
+				// uncontrol cannon, if player is on a ship
+				if player.ShipID == "" {
+					continue
+				}
+				ship := globalState.Ships[player.ShipID]
+				if ship == nil {
+					continue
+				}
+				if interractionTarget == "" {
+					// no cannon specified
+					continue
+				}
+				cannon := ship.GetCannon(interractionTarget)
+				player.unCannon(cannon)
 			default:
 				// do nothing
 			}

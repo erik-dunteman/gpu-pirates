@@ -1,7 +1,8 @@
 
-// WebSocket server URL (replace with your server's URL)
-const serverURL = 'ws://monorail.proxy.rlwy.net:37692/ws';
-// const serverURL = 'ws://localhost:8080/ws';
+let serverURL = 'ws://monorail.proxy.rlwy.net:37692/ws';
+if (window.location.hostname === 'localhost') {
+  serverURL = 'ws://localhost:8080/ws';
+}
 
 let socket;
 
@@ -9,6 +10,8 @@ export let localState = {
     thisPlayer: null,
     players: null,
     islands: null,
+    ships: null,
+    cannons: null,
 }
 
 // Function to connect to the WebSocket server

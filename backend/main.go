@@ -63,7 +63,6 @@ func handleWebSocketConnection(w http.ResponseWriter, r *http.Request) {
 			case "d":
 				UserEventChan <- UserEvent{PlayerID: playerID, Type: "keyDownRight"}
 			case "r":
-				fmt.Println("r", msg)
 				if len(msg) < 2 {
 					continue
 				}
@@ -113,7 +112,7 @@ func main() {
 	go RunGlobalState()
 
 	// debug logging
-	go DebugGlobalState()
+	// go DebugGlobalState()
 
 	// Start the WebSocket server
 	port := "8080"

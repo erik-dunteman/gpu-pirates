@@ -12,6 +12,8 @@ const ShipAcceleration = 5          // 0.005 per second per second (slow)
 const ShipDecay = 0.999             // velocity *= this, per tick
 const ShipTurnSpeed = 0.3           // 0.3 degrees per tick
 const shipDecayGracePeriodMS = 1000 // 1000ms before decay starts.
+const shipWidth = 5000              // 5 meters per shipScale
+const shipScale = 2                 // static for now
 
 func NewShip(id string, x int64, y int64) *Ship {
 	cannons := make(map[string]*Cannon)
@@ -37,7 +39,27 @@ func (c *Cannon) fire() {
 	}
 	c.rateLimit = time.Now()
 	cannonID := uuid.New().String()
-	ball := &CannonBall{ID: cannonID, X: c.Operator.X, Y: c.Operator.Y, Velocity: 7000, Angle: c.Angle}
+
+	// calculate center of cannon, to spawn ball there
+
+	// relative to ship center
+	relXOffset := float64(shipWidth * shipScale / 2)
+	if c.Side == "left" {
+		relXOffset *= -1
+	}
+	relYOffset := float64(c.Pos)
+
+	// rotate that radius by ship.Angle about ship origin
+	ship := globalState.Ships[c.Operator.ShipID]
+	rad := math.Sqrt(math.Pow(relXOffset, 2) + math.Pow(relYOffset, 2))
+	relAngle := math.Atan2(relYOffset, relXOffset) * 180 / math.Pi
+	actualAngle := relAngle + ship.Angle + 90
+
+	// update relXOffset, relYOffset to be rotated by ship.Angle
+	relXOffset = rad * math.Cos(actualAngle*math.Pi/180)
+	relYOffset = rad * -math.Sin(actualAngle*math.Pi/180)
+
+	ball := &CannonBall{ID: cannonID, X: ship.X + int64(relXOffset), Y: ship.Y + int64(relYOffset), Velocity: 7000, Angle: c.Angle}
 	go ball.update()
 	globalState.CannonBalls[ball.ID] = ball
 }

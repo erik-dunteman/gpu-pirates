@@ -45,6 +45,12 @@ func (g *GlobalState) RemovePlayer(playerID string) {
 			if ship != nil {
 				player.unPilot(ship)
 				player.unboard(ship)
+				player.unCrowsNest(ship)
+				for _, cannon := range ship.Cannons {
+					if cannon.Operator == player {
+						player.unCannon(cannon)
+					}
+				}
 			}
 		}
 
@@ -330,6 +336,20 @@ func RunGlobalState() {
 				default:
 					// do nothing
 				}
+
+			case "cannonBallCollision":
+				// cannon ball collision
+				cannonBallID := event.Data
+				shipID := event.Data2
+				cannonBall := globalState.CannonBalls[cannonBallID]
+				if cannonBall == nil {
+					continue
+				}
+				ship := globalState.Ships[shipID]
+				if ship == nil {
+					continue
+				}
+				ship.takeCannonDamage(cannonBall)
 
 			case "board":
 				// board ship

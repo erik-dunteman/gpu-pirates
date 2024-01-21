@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math"
 	"time"
 )
@@ -17,7 +18,7 @@ func NewShip(id string, x int64, y int64) *Ship {
 	cannons := make(map[string]*Cannon)
 	cannons["1"] = &Cannon{ID: "1", Side: "left", Angle: 180, Pos: 0}
 	cannons["2"] = &Cannon{ID: "2", Side: "right", Angle: 0, Pos: 0}
-	ship := &Ship{ID: id, X: x, Y: y, Velocity: 0, Angle: -90, Cannons: cannons}
+	ship := &Ship{ID: id, X: x, Y: y, Velocity: 0, Angle: -90, Cannons: cannons, Health: 100}
 	go ship.update()
 	return ship
 }
@@ -26,6 +27,7 @@ type Ship struct {
 	ID             string             `json:"id"`
 	X              int64              `json:"x"`
 	Y              int64              `json:"y"`
+	Health         int16              `json:"health"`
 	Velocity       int64              `json:"velocity"`
 	Angle          float64            `json:"angle"`
 	Crew           []*Player          `json:"crew"`
@@ -85,6 +87,13 @@ func (s *Ship) update() {
 
 	for {
 		<-t.C
+
+		// destroy ship if health is 0
+		if s.Health <= 0 {
+			s.destroy()
+			return
+		}
+
 		vel := s.Velocity
 
 		newX := s.X + int64(float64(vel)*math.Cos(s.Angle*math.Pi/180)/float64(tickRate))
@@ -130,4 +139,39 @@ func (s *Ship) update() {
 
 func (s *Ship) GetCannon(id string) *Cannon {
 	return s.Cannons[id]
+}
+
+func (s *Ship) takeCannonDamage(cb *CannonBall) {
+	s.Health -= CannonBallDamage
+	fmt.Println("health is now", s.Health)
+	if s.Health < 0 {
+		s.Health = 0
+	}
+
+	// delete cannonball
+	mutateRequest := func(innerState GlobalState) GlobalState {
+		delete(innerState.CannonBalls, cb.ID)
+		return innerState
+	}
+	ScheduleMutation(mutateRequest)
+}
+
+func (s *Ship) destroy() {
+	// unboard crew
+	if s.Pilot != nil {
+		s.Pilot.unPilot(s)
+	}
+	if s.CrowsNest != nil {
+		s.CrowsNest.unCrowsNest(s)
+	}
+	for _, p := range s.Crew {
+		p.unboard(s)
+	}
+
+	// delete ship
+	mutateRequest := func(innerState GlobalState) GlobalState {
+		delete(innerState.Ships, s.ID)
+		return innerState
+	}
+	ScheduleMutation(mutateRequest)
 }

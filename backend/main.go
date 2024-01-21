@@ -78,6 +78,19 @@ func handleWebSocketConnection(w http.ResponseWriter, r *http.Request) {
 					interractionTarget = msg[2]
 				}
 				UserEventChan <- UserEvent{PlayerID: playerID, Type: "interract", Data: interraction, Data2: interractionTarget}
+			case "cannonBallCollision":
+				if len(msg) != 2 {
+					continue
+				}
+				sourceTargetSplit := strings.Split(msg[1], "->")
+				if len(sourceTargetSplit) != 2 {
+					continue
+				}
+				sourceID := sourceTargetSplit[0]
+				targetID := sourceTargetSplit[1]
+
+				UserEventChan <- UserEvent{PlayerID: playerID, Type: "cannonBallCollision", Data: sourceID, Data2: targetID}
+
 			case "board":
 				if len(msg) != 2 {
 					continue

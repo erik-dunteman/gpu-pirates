@@ -16,6 +16,10 @@ type Cannon struct {
 	rateLimit time.Time
 }
 
+const CannonBallVelocity = 15_000
+const CannonBallDamage = 10
+const CannonBallLifetime = 2_000
+
 func (c *Cannon) fire() {
 	if time.Since(c.rateLimit) < interractRateLimit*time.Millisecond {
 		return
@@ -42,7 +46,14 @@ func (c *Cannon) fire() {
 	relXOffset = rad * math.Cos(actualAngle*math.Pi/180)
 	relYOffset = rad * -math.Sin(actualAngle*math.Pi/180)
 
-	ball := &CannonBall{ID: cannonID, X: ship.X + int64(relXOffset), Y: ship.Y + int64(relYOffset), Velocity: 7000, Angle: c.Angle}
+	ball := &CannonBall{
+		ID:       cannonID,
+		ShipID:   ship.ID,
+		X:        ship.X + int64(relXOffset),
+		Y:        ship.Y + int64(relYOffset),
+		Velocity: CannonBallVelocity,
+		Angle:    c.Angle}
+	// TODO: make ball velocity relative to ship velocity and angle
 
 	// we need to add the ball to the global state, but we can't do that from this goroutine
 	// so we send a request to the state manager to do it for us
@@ -60,15 +71,29 @@ type CannonBall struct {
 	Y        int64   `json:"y"`
 	Velocity int64   `json:"velocity"`
 	Angle    float64 `json:"angle"`
+	ShipID   string  `json:"shipID"` // origin ship
 }
 
 func (c *CannonBall) update() {
+	destroyChan := time.After(CannonBallLifetime * time.Millisecond)
+
 	const tickRate = 120 // ticks per second
 	t := time.NewTicker((1000 / tickRate) * time.Millisecond)
 	for {
-		<-t.C
-		vel := c.Velocity
-		c.X += int64(float64(vel) * math.Cos(c.Angle*math.Pi/180) / float64(tickRate))
-		c.Y += int64(float64(vel) * -math.Sin(c.Angle*math.Pi/180) / float64(tickRate))
+		select {
+		case <-destroyChan:
+			mutateRequest := func(innerState GlobalState) GlobalState {
+				delete(innerState.CannonBalls, c.ID)
+				return innerState
+			}
+			ScheduleMutation(mutateRequest)
+			// we need to stop the ticker
+			t.Stop()
+			return
+		case <-t.C:
+			vel := c.Velocity
+			c.X += int64(float64(vel) * math.Cos(c.Angle*math.Pi/180) / float64(tickRate))
+			c.Y += int64(float64(vel) * -math.Sin(c.Angle*math.Pi/180) / float64(tickRate))
+		}
 	}
 }

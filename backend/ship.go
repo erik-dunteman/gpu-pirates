@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"math"
+	"sync"
 	"time"
 )
 
@@ -24,18 +24,19 @@ func NewShip(id string, x int64, y int64) *Ship {
 }
 
 type Ship struct {
-	ID             string             `json:"id"`
-	X              int64              `json:"x"`
-	Y              int64              `json:"y"`
-	Health         int16              `json:"health"`
-	Velocity       int64              `json:"velocity"`
-	Angle          float64            `json:"angle"`
-	Crew           []*Player          `json:"crew"`
-	Pilot          *Player            `json:"pilot"`
-	CrowsNest      *Player            `json:"crowsNest"`
-	Cannons        map[string]*Cannon `json:"cannons"`
-	lastAccelerate time.Time          // only decay if it's been time since last accelerate, to prevent jerky velocity
-
+	ID                 string             `json:"id"`
+	X                  int64              `json:"x"`
+	Y                  int64              `json:"y"`
+	Health             int16              `json:"health"`
+	Velocity           int64              `json:"velocity"`
+	Angle              float64            `json:"angle"`
+	Crew               []*Player          `json:"crew"`
+	Pilot              *Player            `json:"pilot"`
+	CrowsNest          *Player            `json:"crowsNest"`
+	Cannons            map[string]*Cannon `json:"cannons"`
+	lastAccelerate     time.Time          // only decay if it's been time since last accelerate, to prevent jerky velocity
+	lastCannonDamage   []string           // cannonball IDs. since we detect collision clientside, an event can be sent multiple times. this prevents double-counting damage
+	lastCannonDamageMu sync.Mutex
 }
 
 func (s *Ship) accelerate() {
@@ -142,8 +143,21 @@ func (s *Ship) GetCannon(id string) *Cannon {
 }
 
 func (s *Ship) takeCannonDamage(cb *CannonBall) {
+	s.lastCannonDamageMu.Lock()
+	defer s.lastCannonDamageMu.Unlock()
+	for _, id := range s.lastCannonDamage {
+		if id == cb.ID {
+			// already took damage from this cannonball
+			return
+		}
+	}
+	s.lastCannonDamage = append(s.lastCannonDamage, cb.ID)
+	// keep at most 10 cannonballs in the list to prevent memory leak
+	if len(s.lastCannonDamage) > 10 {
+		s.lastCannonDamage = s.lastCannonDamage[1:]
+	}
+
 	s.Health -= CannonBallDamage
-	fmt.Println("health is now", s.Health)
 	if s.Health < 0 {
 		s.Health = 0
 	}

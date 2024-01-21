@@ -7,6 +7,8 @@ import (
 
 var UserEventChan chan UserEvent
 
+var MutateChan chan func(GlobalState) GlobalState
+
 type UserEvent struct {
 	PlayerID string `json:"playerID"`
 	Type     string `json:"type"`
@@ -126,8 +128,18 @@ func InitGlobalState() {
 	globalState.Ships[ship2.ID] = ship2
 }
 
-func InitUserEventChan() {
+func InitEventChans() {
 	UserEventChan = make(chan UserEvent)
+	MutateChan = make(chan func(GlobalState) GlobalState)
+}
+
+func ScheduleMutation(mutationEvent func(GlobalState) GlobalState) {
+	// we need to spawn a goroutine to send the request to the state manager
+	// because the state manager is blocking on the select statement
+	// and we don't want to block the current goroutine
+	go func() {
+		MutateChan <- mutationEvent
+	}()
 }
 
 func DebugGlobalState() {
@@ -152,213 +164,223 @@ func DebugGlobalState() {
 func RunGlobalState() {
 	// only a single thread can update the game state at a time to prevent race conditions
 	for {
-		event := <-UserEventChan
-		switch event.Type {
-		case "reset":
-			// reset game state
-			InitGlobalState()
-		case "addPlayer":
-			// add player to game state if it doesn't exist
-			globalState.AddPlayer(event.PlayerID)
-		case "removePlayer":
-			// remove player from game state if it exists
-			globalState.RemovePlayer(event.PlayerID)
-		case "keyDownUp":
-			player := globalState.Players[event.PlayerID]
+		// prioritize internal events over user events
 
-			switch player.Controls {
-			case "walk":
-				player.accelerate()
-			case "pilot":
-				ship := globalState.Ships[player.ShipID]
-				if ship != nil {
-					ship.accelerate()
-				}
-			default:
-				// do nothing
-			}
-		case "keyDownLeft":
-			player := globalState.Players[event.PlayerID]
-			switch player.Controls {
-			case "walk":
-				player.turnLeft()
-			case "crowsNest":
-				player.turnLeft()
-			case "pilot":
-				ship := globalState.Ships[player.ShipID]
-				if ship != nil {
-					ship.turnLeft()
-				}
-			default:
-				// do nothing
-			}
-		case "keyDownDown":
-			player := globalState.Players[event.PlayerID]
-			switch player.Controls {
-			case "walk":
-				player.reverse()
-			default:
-				// do nothing
-			}
-		case "keyDownRight":
-			player := globalState.Players[event.PlayerID]
-			switch player.Controls {
-			case "walk":
-				player.turnRight()
-			case "crowsNest":
-				player.turnRight()
-			case "pilot":
-				ship := globalState.Ships[player.ShipID]
-				if ship != nil {
-					ship.turnRight()
-				}
-			default:
-				// do nothing
-			}
+		select {
+		case mutationEvent := <-MutateChan:
+			// mutation events are internal events that would mutate the global state
+			// we need to run this in the main state loop to prevent concurrent read/write access to the global state
+			// so callers send in a closure that will mutate the global state
+			globalState = mutationEvent(globalState)
 
-		case "interract":
-			// interract with something
-			interraction := event.Data
-			interractionTarget := event.Data2
-			player := globalState.Players[event.PlayerID]
-			if player == nil {
-				continue
-			}
-			switch interraction {
-			case "pilot":
-				// pilot ship, if player is on an unPiloted ship
+		case event := <-UserEventChan:
+			switch event.Type {
+			case "reset":
+				// reset game state
+				InitGlobalState()
+			case "addPlayer":
+				// add player to game state if it doesn't exist
+				globalState.AddPlayer(event.PlayerID)
+			case "removePlayer":
+				// remove player from game state if it exists
+				globalState.RemovePlayer(event.PlayerID)
+			case "keyDownUp":
+				player := globalState.Players[event.PlayerID]
+
+				switch player.Controls {
+				case "walk":
+					player.accelerate()
+				case "pilot":
+					ship := globalState.Ships[player.ShipID]
+					if ship != nil {
+						ship.accelerate()
+					}
+				default:
+					// do nothing
+				}
+			case "keyDownLeft":
+				player := globalState.Players[event.PlayerID]
+				switch player.Controls {
+				case "walk":
+					player.turnLeft()
+				case "crowsNest":
+					player.turnLeft()
+				case "pilot":
+					ship := globalState.Ships[player.ShipID]
+					if ship != nil {
+						ship.turnLeft()
+					}
+				default:
+					// do nothing
+				}
+			case "keyDownDown":
+				player := globalState.Players[event.PlayerID]
+				switch player.Controls {
+				case "walk":
+					player.reverse()
+				default:
+					// do nothing
+				}
+			case "keyDownRight":
+				player := globalState.Players[event.PlayerID]
+				switch player.Controls {
+				case "walk":
+					player.turnRight()
+				case "crowsNest":
+					player.turnRight()
+				case "pilot":
+					ship := globalState.Ships[player.ShipID]
+					if ship != nil {
+						ship.turnRight()
+					}
+				default:
+					// do nothing
+				}
+
+			case "interract":
+				// interract with something
+				interraction := event.Data
+				interractionTarget := event.Data2
+				player := globalState.Players[event.PlayerID]
+				if player == nil {
+					continue
+				}
+				switch interraction {
+				case "pilot":
+					// pilot ship, if player is on an unPiloted ship
+					if player.ShipID == "" {
+						continue
+					}
+					ship := globalState.Ships[player.ShipID]
+					if ship == nil {
+						continue
+					}
+					if ship.Pilot != nil {
+						// ship already has a pilot
+						continue
+					}
+					player.pilot(ship)
+				case "unPilot":
+					// unPilot ship, if player is on a piloted ship
+					if player.ShipID == "" {
+						continue
+					}
+					ship := globalState.Ships[player.ShipID]
+					if ship == nil {
+						continue
+					}
+					player.unPilot(ship)
+				case "crowsNest":
+					if player.ShipID == "" {
+						continue
+					}
+					ship := globalState.Ships[player.ShipID]
+					if ship == nil {
+						continue
+					}
+					if ship.CrowsNest != nil {
+						// ship already has a crowsNest
+						continue
+					}
+					player.crowsNest(ship)
+				case "unCrowsNest":
+					// unCrowsNest ship, if player is in the crows nest of a ship
+					if player.ShipID == "" {
+						continue
+					}
+					ship := globalState.Ships[player.ShipID]
+					if ship == nil {
+						continue
+					}
+					player.unCrowsNest(ship)
+				case "cannon":
+					// control cannon, if player is on a ship
+					if player.ShipID == "" {
+						continue
+					}
+					ship := globalState.Ships[player.ShipID]
+					if ship == nil {
+						continue
+					}
+					if interractionTarget == "" {
+						// no cannon specified
+						continue
+					}
+					cannon := ship.GetCannon(interractionTarget)
+					if cannon == nil {
+						// cannon doesn't exist
+						continue
+					}
+					player.cannon(cannon)
+				case "unCannon":
+					// uncontrol cannon, if player is on a ship
+					if player.ShipID == "" {
+						continue
+					}
+					ship := globalState.Ships[player.ShipID]
+					if ship == nil {
+						continue
+					}
+					if interractionTarget == "" {
+						// no cannon specified
+						continue
+					}
+					cannon := ship.GetCannon(interractionTarget)
+					player.unCannon(cannon)
+				default:
+					// do nothing
+				}
+
+			case "board":
+				// board ship
+				targetShipID := event.Data
+				targetShip := globalState.Ships[targetShipID]
+				if targetShip == nil {
+					continue
+				}
+				player := globalState.Players[event.PlayerID]
+				if player == nil {
+					continue
+				}
+				if player.ShipID != "" {
+					// player is already on a ship
+					continue
+				}
+				player.board(targetShip)
+			case "unboard":
+				// unboard ship
+				targetShipID := event.Data
+				targetShip := globalState.Ships[targetShipID]
+				if targetShip == nil {
+					continue
+				}
+				player := globalState.Players[event.PlayerID]
+				if player == nil {
+					continue
+				}
+				if player.ShipID != targetShipID {
+					// player is not on this ship
+					continue
+				}
+				player.unboard(targetShip)
+			case "fireCannon":
+				player := globalState.Players[event.PlayerID]
+				if player == nil {
+					continue
+				}
 				if player.ShipID == "" {
 					continue
 				}
-				ship := globalState.Ships[player.ShipID]
-				if ship == nil {
-					continue
-				}
-				if ship.Pilot != nil {
-					// ship already has a pilot
-					continue
-				}
-				player.pilot(ship)
-			case "unPilot":
-				// unPilot ship, if player is on a piloted ship
-				if player.ShipID == "" {
-					continue
-				}
-				ship := globalState.Ships[player.ShipID]
-				if ship == nil {
-					continue
-				}
-				player.unPilot(ship)
-			case "crowsNest":
-				if player.ShipID == "" {
-					continue
-				}
-				ship := globalState.Ships[player.ShipID]
-				if ship == nil {
-					continue
-				}
-				if ship.CrowsNest != nil {
-					// ship already has a crowsNest
-					continue
-				}
-				player.crowsNest(ship)
-			case "unCrowsNest":
-				// unCrowsNest ship, if player is in the crows nest of a ship
-				if player.ShipID == "" {
-					continue
-				}
-				ship := globalState.Ships[player.ShipID]
-				if ship == nil {
-					continue
-				}
-				player.unCrowsNest(ship)
-			case "cannon":
-				// control cannon, if player is on a ship
-				if player.ShipID == "" {
-					continue
-				}
-				ship := globalState.Ships[player.ShipID]
-				if ship == nil {
-					continue
-				}
-				if interractionTarget == "" {
-					// no cannon specified
-					continue
-				}
-				cannon := ship.GetCannon(interractionTarget)
+				// fire cannon
+				cannonID := event.Data
+				cannon := globalState.Ships[player.ShipID].GetCannon(cannonID)
 				if cannon == nil {
-					// cannon doesn't exist
 					continue
 				}
-				player.cannon(cannon)
-			case "unCannon":
-				// uncontrol cannon, if player is on a ship
-				if player.ShipID == "" {
-					continue
-				}
-				ship := globalState.Ships[player.ShipID]
-				if ship == nil {
-					continue
-				}
-				if interractionTarget == "" {
-					// no cannon specified
-					continue
-				}
-				cannon := ship.GetCannon(interractionTarget)
-				player.unCannon(cannon)
+				cannon.fire()
 			default:
 				// do nothing
 			}
-
-		case "board":
-			// board ship
-			targetShipID := event.Data
-			targetShip := globalState.Ships[targetShipID]
-			if targetShip == nil {
-				continue
-			}
-			player := globalState.Players[event.PlayerID]
-			if player == nil {
-				continue
-			}
-			if player.ShipID != "" {
-				// player is already on a ship
-				continue
-			}
-			player.board(targetShip)
-		case "unboard":
-			// unboard ship
-			targetShipID := event.Data
-			targetShip := globalState.Ships[targetShipID]
-			if targetShip == nil {
-				continue
-			}
-			player := globalState.Players[event.PlayerID]
-			if player == nil {
-				continue
-			}
-			if player.ShipID != targetShipID {
-				// player is not on this ship
-				continue
-			}
-			player.unboard(targetShip)
-		case "fireCannon":
-			player := globalState.Players[event.PlayerID]
-			if player == nil {
-				continue
-			}
-			if player.ShipID == "" {
-				continue
-			}
-			// fire cannon
-			cannonID := event.Data
-			cannon := globalState.Ships[player.ShipID].GetCannon(cannonID)
-			if cannon == nil {
-				continue
-			}
-			cannon.fire()
-		default:
-			// do nothing
 		}
 	}
 }

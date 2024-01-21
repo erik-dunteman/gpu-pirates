@@ -108,7 +108,7 @@ func main() {
 
 	// start the game state
 	InitGlobalState()
-	go InitUserEventChan()
+	go InitEventChans()
 	go RunGlobalState()
 
 	// debug logging
